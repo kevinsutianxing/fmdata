@@ -13,7 +13,7 @@ from datetime import date
 from typing import Any
 
 import pandas as pd
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
@@ -103,17 +103,16 @@ def research_health() -> dict[str, Any]:
 
 
 @app.get("/research/catalog")
-def get_research_catalog(_: None = require_research_key) -> dict[str, Any]:
-    # FastAPI does not inject plain function defaults as dependencies. This
-    # endpoint is retained for direct calls; authenticated route registration
-    # below supplies the actual dependency wrapper.
+def get_research_catalog(
+    _: None = Depends(require_research_key),
+) -> dict[str, Any]:
     return research_catalog()
 
 
 @app.post("/research/snapshots")
 def create_research_snapshot(
     request: SnapshotRequest,
-    _: None = require_research_key,
+    _: None = Depends(require_research_key),
 ) -> dict[str, Any]:
     payload = _model_dict(request)
     try:
@@ -144,7 +143,7 @@ def create_research_snapshot(
 @app.get("/research/snapshots/{snapshot_id}/manifest")
 def get_snapshot_manifest(
     snapshot_id: str,
-    _: None = require_research_key,
+    _: None = Depends(require_research_key),
 ) -> dict[str, Any]:
     try:
         return load_snapshot_manifest(snapshot_id)
@@ -155,7 +154,7 @@ def get_snapshot_manifest(
 @app.get("/research/snapshots/{snapshot_id}/data")
 def download_snapshot(
     snapshot_id: str,
-    _: None = require_research_key,
+    _: None = Depends(require_research_key),
 ):
     try:
         path = snapshot_file(snapshot_id, raw=False)
@@ -167,7 +166,7 @@ def download_snapshot(
 @app.get("/research/snapshots/{snapshot_id}/raw")
 def download_raw_snapshot(
     snapshot_id: str,
-    _: None = require_research_key,
+    _: None = Depends(require_research_key),
 ):
     try:
         path = snapshot_file(snapshot_id, raw=True)
@@ -179,7 +178,7 @@ def download_raw_snapshot(
 @app.post("/research/entities/resolve")
 def resolve_financial_entity(
     request: EntityResolveRequest,
-    _: None = require_research_key,
+    _: None = Depends(require_research_key),
 ) -> dict[str, Any]:
     from fmdata.reference import stock_list
 
