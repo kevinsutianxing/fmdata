@@ -5,7 +5,7 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory=/home/ubuntu/fmdata
-ExecStart=/usr/bin/python3 -m uvicorn fmdata.server:app --host 127.0.0.1 --port 1934
+ExecStart=/usr/bin/python3 -m uvicorn fmdata.research_server:app --host 127.0.0.1 --port 1934
 Restart=on-failure
 RestartSec=5
 EnvironmentFile=/home/ubuntu/fmdata/.env
