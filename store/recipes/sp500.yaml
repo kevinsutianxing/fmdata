@@ -1,0 +1,13 @@
+name: sp500
+category: overseas
+description: "标普500指数"
+file: overseas/sp500.csv
+source: remote
+update_freq: daily
+fetch:
+  host: hk43
+  command: python3 ~/.openclaw/skills/fred-data/scripts/fred_cli.py observations SP500 --start 2020-01-01 --format csv
+  env: [FRED_API_KEY]
+  parser: fred
+  series_id: SP500
+  date_col: date

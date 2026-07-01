@@ -1,0 +1,9 @@
+name: extended_industry_median
+category: sw_extended
+description: "行业中位数指标(基于一致预期+基本面扩展)"
+file: sw_extended/extended_industry_median.csv
+source: agent
+update_freq: weekly
+fetch:
+  command: python3 /home/ubuntu/fmdata/scripts/compute_industry_median.py
+  timeout: 300

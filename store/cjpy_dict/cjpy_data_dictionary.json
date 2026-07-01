@@ -1,0 +1,330 @@
+{
+  "tables_raw": [
+    "股票基本信息",
+    "股本结构",
+    "分红送股",
+    "十大股东",
+    "十大流通股东",
+    "机构持股",
+    "股东增减持",
+    "业绩快报",
+    "主要财务指标",
+    "合并资产负债表",
+    "合并利润表",
+    "合并现金流量表",
+    "定期报告披露日期",
+    "主营收入及成本（分行业）",
+    "主营收入及成本（分产品）",
+    "主营收入及成本（分地区）",
+    "交易公开信息",
+    "融资融券汇总",
+    "融资融券明细",
+    "融资融券担保券数据",
+    "基金基本信息",
+    "基金业绩比较基准",
+    "基金经理",
+    "基金费率",
+    "基金财务指标",
+    "基金持股明细",
+    "基金持债明细",
+    "基金行业配置",
+    "基金资产配置",
+    "基金债券配置",
+    "基金持有人结构",
+    "基金净值",
+    "基金净值收益率",
+    "基金份额变动",
+    "基金分类",
+    "国内生产总值简表",
+    "工业增加值简表",
+    "固定资产投资简表",
+    "房地产开发投资和销售简表",
+    "社会消费品零售总额简表",
+    "居民消费价格简表",
+    "工业生产者价格简表"
+  ],
+  "factors_raw": null,
+  "factors_columns": [
+    "公式",
+    "说明"
+  ],
+  "factors_count": 69,
+  "factors_records": [
+    {
+      "公式": "CurrentStockName()",
+      "说明": ""
+    },
+    {
+      "公式": "StockNameEndT(StockId, EndT)",
+      "说明": ""
+    },
+    {
+      "公式": "IsAStock(StockId)",
+      "说明": ""
+    },
+    {
+      "公式": "BK(StockId)",
+      "说明": ""
+    },
+    {
+      "公式": "StockIssuePrice()",
+      "说明": ""
+    },
+    {
+      "公式": "open()",
+      "说明": ""
+    },
+    {
+      "公式": "high()",
+      "说明": ""
+    },
+    {
+      "公式": "low()",
+      "说明": ""
+    },
+    {
+      "公式": "close()",
+      "说明": ""
+    },
+    {
+      "公式": "sys_prevclose()",
+      "说明": ""
+    },
+    {
+      "公式": "UnAdjClose()",
+      "说明": ""
+    },
+    {
+      "公式": "close()/sys_prevclose()-1",
+      "说明": ""
+    },
+    {
+      "公式": "vol()",
+      "说明": ""
+    },
+    {
+      "公式": "Amount()",
+      "说明": ""
+    },
+    {
+      "公式": "StockNegotiableShares3()",
+      "说明": ""
+    },
+    {
+      "公式": "StockTotalShares3()",
+      "说明": ""
+    },
+    {
+      "公式": "(StockType(StockID)=-1)?StocksMarketValue(GetBKByDate(StockId, EndT),EndT,1):StockMarketValue3()",
+      "说明": "单位：万元；指数算法：成分股市值加总"
+    },
+    {
+      "公式": "(StockType(StockID)=-1)?StocksTotalValue(GetBKByDate(StockId, EndT),EndT,1):StockTotalValue3()",
+      "说明": "单位：万元；指数算法：成分股市值加总"
+    },
+    {
+      "公式": "IsST_3(EndT)",
+      "说明": ""
+    },
+    {
+      "公式": "IsPT_3(EndT)",
+      "说明": ""
+    },
+    {
+      "公式": "istradeday(EndT)",
+      "说明": ""
+    },
+    {
+      "公式": "IfStockSuspended(EndT,2)",
+      "说明": ""
+    },
+    {
+      "公式": "IsStockGoMarket(EndT)",
+      "说明": ""
+    },
+    {
+      "公式": "IsStockGoMarket3(EndT)",
+      "说明": ""
+    },
+    {
+      "公式": "GetStockTradingStatusbyEndt(StockId,EndT)",
+      "说明": ""
+    },
+    {
+      "公式": "DateToInt(Firstday())",
+      "说明": ""
+    },
+    {
+      "公式": "StockGoMarketDays()",
+      "说明": ""
+    },
+    {
+      "公式": "StockGoMarketTradeDays()",
+      "说明": ""
+    },
+    {
+      "公式": "StockIndustryInfoLvN(StockId,EndT,1,\"申万行业\",1)",
+      "说明": ""
+    },
+    {
+      "公式": "StockIndustryInfoLvN(StockId,EndT,2,\"申万行业\",1)",
+      "说明": ""
+    },
+    {
+      "公式": "StockIndustryInfoLvN(StockId,EndT,3,\"申万行业\",1)",
+      "说明": ""
+    },
+    {
+      "公式": "StockIndustryInfoLvN(StockId,EndT,1,\"申万行业\",2)",
+      "说明": ""
+    },
+    {
+      "公式": "StockIndustryInfoLvN(StockId,EndT,2,\"申万行业\",2)",
+      "说明": ""
+    },
+    {
+      "公式": "StockIndustryInfoLvN(StockId,EndT,3,\"申万行业\",2)",
+      "说明": ""
+    },
+    {
+      "公式": "StockSWIndustryIdLv1()",
+      "说明": ""
+    },
+    {
+      "公式": "StockSWIndustryNameLv1()",
+      "说明": ""
+    },
+    {
+      "公式": "StockSWIndustryIdLv2()",
+      "说明": ""
+    },
+    {
+      "公式": "StockSWIndustryNameLv2()",
+      "说明": ""
+    },
+    {
+      "公式": "StockSWIndustryIdLv3()",
+      "说明": ""
+    },
+    {
+      "公式": "StockSWIndustryNameLv3()",
+      "说明": ""
+    },
+    {
+      "公式": "(StockType(StockID)=-1)?Index_PE2(0,0):StockPE(EndT, 0)",
+      "说明": "市盈率，支持A股和指数"
+    },
+    {
+      "公式": "(StockType(StockID)=-1)?Index_PE(0,0):StockPE_VI(EndT, 0)",
+      "说明": "市盈率，支持A股和指数"
+    },
+    {
+      "公式": "(StockType(StockID)=-1)?Index_PB2(0,0):StockPNA(EndT)",
+      "说明": "市净率，支持A股和指数"
+    },
+    {
+      "公式": "(StockType(StockID)=-1)?Index_PB(0,0):StockPNA_II(EndT)",
+      "说明": "市净率，支持A股和指数"
+    },
+    {
+      "公式": "StockPNA_VI(EndT)",
+      "说明": "市净率，支持A股，不支持指数"
+    },
+    {
+      "公式": "(StockType(StockID)=-1)?Index_PSR2(0,0):StockPMI(EndT)",
+      "说明": "市销率，支持A股和指数"
+    },
+    {
+      "公式": "(StockType(StockID)=-1)?Index_PSR(0,0):StockPMI_VI(EndT)",
+      "说明": "市销率，支持A股和指数"
+    },
+    {
+      "公式": "(StockType(StockID)=-1)?Index_PCF2(0,0):StockPCF(EndT)",
+      "说明": "市现率，支持A股和指数"
+    },
+    {
+      "公式": "(StockType(StockID)=-1)?Index_PCF(0,0):StockPCF_VI(EndT)",
+      "说明": "市现率，支持A股和指数"
+    },
+    {
+      "公式": "StockPFAmount(IncDay(IncYear(EndT, -1),1),EndT)",
+      "说明": ""
+    },
+    {
+      "公式": "StockDividendYieldRatio(EndT)",
+      "说明": ""
+    },
+    {
+      "公式": "StockPE(EndT, 0)",
+      "说明": "股票市盈率，不支持指数"
+    },
+    {
+      "公式": "StockPE_VI(EndT, 0)",
+      "说明": "股票市盈率，不支持指数"
+    },
+    {
+      "公式": "StockPNA(EndT)",
+      "说明": "股票市净率，不支持指数"
+    },
+    {
+      "公式": "StockPNA_II(EndT)",
+      "说明": "股票市净率，不支持指数"
+    },
+    {
+      "公式": "StockPNA_VI(EndT)",
+      "说明": "股票市净率，不支持指数"
+    },
+    {
+      "公式": "StockPMI(EndT)",
+      "说明": "股票市销率，不支持指数"
+    },
+    {
+      "公式": "StockPMI_VI(EndT)",
+      "说明": "股票市销率，不支持指数"
+    },
+    {
+      "公式": "StockPCF(EndT)",
+      "说明": "股票市现率，不支持指数"
+    },
+    {
+      "公式": "StockPCF_VI(EndT)",
+      "说明": "股票市现率，不支持指数"
+    },
+    {
+      "公式": "Index_PE(0,0)",
+      "说明": "指数市盈率"
+    },
+    {
+      "公式": "Index_PB(0,0)",
+      "说明": "指数市净率"
+    },
+    {
+      "公式": "Index_PSR(0,0)",
+      "说明": "指数市销率"
+    },
+    {
+      "公式": "Index_PCF(0,0)",
+      "说明": "指数市现率"
+    },
+    {
+      "公式": "Index_PE2(0,0)",
+      "说明": "指数市盈率"
+    },
+    {
+      "公式": "Index_PB2(0,0)",
+      "说明": "指数市净率"
+    },
+    {
+      "公式": "Index_PSR2(0,0)",
+      "说明": "指数市销率"
+    },
+    {
+      "公式": "Index_PCF2(0,0)",
+      "说明": "指数市现率"
+    },
+    {
+      "公式": "(StockType(StockID)=-1)?StocksHSL3(GetBKByDate(StockId, EndT),0,1):StockHsl3()",
+      "说明": "单位：%；股票算法：成交量/流通股本；指数算法：∑(股票i成交量) /∑(股票i流通股本和)"
+    }
+  ]
+}

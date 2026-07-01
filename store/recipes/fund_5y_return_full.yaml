@@ -1,0 +1,10 @@
+name: fund_5y_return_full
+category: market
+description: 三类基金全量 5 年累计收益曲线与收益汇总，来自 akshare fund_open_fund_info_em(indicator='累计收益率走势', period='5年')
+file: market/fund_5y_return_full.csv
+source: agent
+update_freq: weekly
+fetch:
+  func: agent
+  command: "python3 /home/ubuntu/fmdata/store/scripts/fetch_fund_5y_returns_full.py --workers 4"
+  timeout: 86400

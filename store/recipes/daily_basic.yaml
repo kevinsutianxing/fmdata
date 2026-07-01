@@ -1,0 +1,9 @@
+name: daily_basic
+category: market
+description: "A股每日估值指标（PE/PB/PS/总市值）"
+file: market/daily_basic.csv
+source: tushare
+update_freq: daily
+fetch:
+  func: daily_basic
+  date_col: trade_date

@@ -1,0 +1,10 @@
+name: active_equity_fund_list
+category: market
+description: "主动权益基金列表(从tushare fund_basic筛选股票型/混合型/灵活配置/指数型)"
+file: market/active_equity_fund_list.csv
+source: agent
+update_freq: weekly
+fetch:
+  func: agent
+  command: "python3 /home/ubuntu/fmdata/store/scripts/fetch_active_fund_list.py"
+  timeout: 60

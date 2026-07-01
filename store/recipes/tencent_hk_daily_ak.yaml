@@ -1,0 +1,13 @@
+category: overseas
+description: 腾讯控股00700.HK日线(akshare来源)
+update_freq: daily
+fetch:
+  date_col: 日期
+  func: stock_hk_hist
+  params:
+    adjust: hfq
+    period: daily
+    symbol: '00700'
+file: overseas/tencent_hk_daily_ak.csv
+name: tencent_hk_daily_ak
+source: akshare

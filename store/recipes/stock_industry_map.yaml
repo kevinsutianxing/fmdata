@@ -1,0 +1,11 @@
+name: stock_industry_map
+category: reference
+description: "A股申万行业分类映射"
+file: reference/stock_industry_map.csv
+source: tushare
+update_freq: weekly
+fetch:
+  func: index_classify
+  params:
+    level: L1
+    src: SW2021

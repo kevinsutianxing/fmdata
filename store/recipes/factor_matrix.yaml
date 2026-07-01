@@ -1,0 +1,10 @@
+name: factor_matrix_unified
+category: factors
+description: "因子矩阵（策略研究用）"
+file: factors/factor_matrix_unified.csv
+source: agent
+fetch:
+  command: python3 ~/claude-workspace/industry_rotation/compute_factors.py
+  output: factors/factor_matrix_unified.csv
+  timeout: 300
+update_freq: on_demand

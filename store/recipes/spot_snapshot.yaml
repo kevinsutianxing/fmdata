@@ -1,0 +1,10 @@
+name: spot_snapshot
+category: market
+description: "盘中实时行情快照(latest only): 全市场 spot 经 QG 代理每 ~2min 刷新, 消费者读缓存秒回。RISK-1 解决方案。盘外/抓取失败时保留上次好快照(stale 兜底)。"
+file: market/spot_snapshot.csv
+source: agent
+update_freq: realtime
+fetch:
+  func: agent
+  command: "python3 /home/ubuntu/fmdata/scripts/refresh_spot_snapshot.py"
+  timeout: 90

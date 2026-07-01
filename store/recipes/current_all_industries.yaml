@@ -1,0 +1,7 @@
+name: current_all_industries
+category: strategy
+description: "V13策略当前推荐行业列表(行业代码+名称+排名+得分)"
+file: strategy/current_all_industries.csv
+source: static
+_auto_fetch: false
+update_freq: manual

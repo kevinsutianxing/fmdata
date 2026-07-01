@@ -1,0 +1,10 @@
+name: stock_fina
+category: fundamentals
+description: "A股财务指标（季报）"
+file: fundamentals/stock_fina/
+source: tushare
+update_freq: quarterly
+fetch:
+  func: fina_indicator
+  date_col: end_date
+  batch_by_period: true

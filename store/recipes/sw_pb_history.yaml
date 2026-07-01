@@ -1,0 +1,9 @@
+name: sw_pb_history
+category: market
+description: "申万一级行业PB历史(日频,由sw_daily_full派生)"
+file: market/sw_pb_history.csv
+source: agent
+update_freq: daily
+fetch:
+  command: python3 /home/ubuntu/fmdata/scripts/refresh_sw_daily_full.py
+  timeout: 600

@@ -1,0 +1,12 @@
+name: hs300_daily
+category: market
+description: "沪深300日线行情"
+file: market/hs300_daily.csv
+source: tushare
+update_freq: daily
+fetch:
+  func: index_daily
+  date_col: trade_date
+  params:
+    ts_code: "000300.SH"
+    start_date: "20200101"

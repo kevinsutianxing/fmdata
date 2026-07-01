@@ -1,0 +1,9 @@
+name: cpi
+category: macro
+description: "CPI月度数据"
+file: macro/cpi.csv
+source: tushare
+update_freq: monthly
+fetch:
+  func: cn_cpi
+  date_col: month

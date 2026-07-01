@@ -1,0 +1,11 @@
+category: market
+description: 龙虎榜明细(tushare top_list, 日级)
+update_freq: daily
+fetch:
+  date_col: trade_date
+  func: top_list
+  params:
+    trade_date: 'latest'
+file: market/lhb_daily.csv
+name: lhb_daily
+source: tushare

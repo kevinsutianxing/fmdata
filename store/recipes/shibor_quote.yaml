@@ -1,0 +1,9 @@
+category: macro
+description: SHIBOR利率历史(隔夜/1周/1年)
+update_freq: daily
+fetch:
+  date_col: date
+  func: shibor_quote
+file: macro/shibor.csv
+name: shibor_quote
+source: tushare

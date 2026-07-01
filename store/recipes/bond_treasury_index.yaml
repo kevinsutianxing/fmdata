@@ -1,0 +1,10 @@
+category: market
+description: 上证国债指数(000012), 日频, 2007至今, 4600+行
+update_freq: daily
+fetch:
+  date_col: date
+  func: bond_treasury_index_cbond
+  params: {}
+file: market/bond_treasury_index.csv
+name: bond_treasury_index
+source: akshare

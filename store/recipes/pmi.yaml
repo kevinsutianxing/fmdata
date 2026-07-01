@@ -1,0 +1,10 @@
+name: pmi
+category: macro
+description: "PMI月度数据（制造业/非制造业指数及同比）"
+file: macro/pmi.csv
+source: akshare
+update_freq: monthly
+fetch:
+  func: macro_china_pmi
+  date_col: 月份
+  incremental: false

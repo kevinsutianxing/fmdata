@@ -1,0 +1,10 @@
+category: macro
+description: 中债国债到期收益率曲线(1Y/3Y/5Y/7Y/10Y/30Y), 来源akshare bond_china_yield
+update_freq: daily
+fetch:
+  date_col: date
+  func: bond_china_yield
+  params: {}
+file: macro/cgb_yield_curve.csv
+name: cgb_yield_curve
+source: akshare

@@ -1,0 +1,11 @@
+name: rss_finance
+category: overseas
+description: "RSS新闻-全球财经/美股/宏观（CNBC+Bloomberg+WSJ+MarketWatch+FT+NYT直采，实时零延迟）"
+file: overseas/rss_finance.csv
+source: remote
+update_freq: daily
+fetch:
+  host: hk43
+  command: python3 ~/.openclaw/skills/news-data/scripts/rss_cli.py fetch --channel finance --days 1 --format csv
+  parser: raw
+  timeout: 30

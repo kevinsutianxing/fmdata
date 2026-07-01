@@ -1,0 +1,10 @@
+name: restricted_release
+category: fundamentals
+description: "限售解禁数据(东方财富) - 未来6个月全市场解禁明细(数量/市值/占流通比)"
+file: fundamentals/restricted_release.csv
+source: agent
+update_freq: weekly
+fetch:
+  func: agent
+  command: "python3 /home/ubuntu/fmdata/store/scripts/fetch_restricted_release.py"
+  timeout: 120

@@ -1,0 +1,10 @@
+name: semiannual_tracker
+category: fundamentals
+description: "半年报追踪 - 快报(天软cjpy)+预告(东财akshare)+Q2拆解+同比/环比, 每日更新"
+file: fundamentals/semiannual_tracker.csv
+source: agent
+update_freq: daily
+fetch:
+  func: agent
+  command: "python3 /home/ubuntu/fmdata/scripts/fetch_semiannual_tracker.py"
+  timeout: 180

@@ -1,0 +1,10 @@
+name: semiannual_investment
+category: fundamentals
+description: "半年报投资决策系统-净利润断层+股价跳空+多因子评分,每日更新"
+file: fundamentals/semiannual_investment.csv
+source: agent
+update_freq: daily
+fetch:
+  func: agent
+  command: "python3 /home/ubuntu/fmdata/scripts/fetch_semiannual_investment_system.py"
+  timeout: 300

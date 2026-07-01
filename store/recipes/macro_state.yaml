@@ -1,0 +1,10 @@
+name: macro_state
+category: macro
+description: "宏观状态分类（基于z-score的recession/neutral/expansion判断）"
+file: macro/macro_state.csv
+source: agent
+fetch:
+  command: python3 /home/ubuntu/fmdata/scripts/compute_macro_monthly.py
+  output: macro/macro_state.csv
+  timeout: 120
+update_freq: monthly

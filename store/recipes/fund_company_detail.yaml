@@ -1,0 +1,10 @@
+category: market
+description: 公募基金公司历年管理规模明细（股票型/混合型/债券型/指数型/QDII/货币型分类规模）
+update_freq: monthly
+fetch:
+  func: fund_aum_hist_em
+  params:
+    year: '2025'
+file: market/fund_company_detail.csv
+name: fund_company_detail
+source: akshare

@@ -1,0 +1,7 @@
+name: current_recommendation
+category: strategy
+description: "V13策略当前Top行业推荐(精简版)"
+file: strategy/current_recommendation.csv
+source: static
+_auto_fetch: false
+update_freq: manual

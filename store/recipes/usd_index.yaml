@@ -1,0 +1,13 @@
+name: usd_index
+category: overseas
+description: "美元指数"
+file: overseas/usd_index.csv
+source: remote
+update_freq: daily
+fetch:
+  host: hk43
+  command: python3 ~/.openclaw/skills/fred-data/scripts/fred_cli.py observations DEXUSEU --start 2020-01-01 --format csv
+  env: [FRED_API_KEY]
+  parser: fred
+  series_id: DEXUSEU
+  date_col: date

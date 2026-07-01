@@ -1,0 +1,10 @@
+name: fund_basic_open
+category: market
+description: 全量开放式基金基础信息，来自 tushare fund_basic(market='O')，含 fund_type/invest_type/status
+file: market/fund_basic_open.csv
+source: agent
+update_freq: weekly
+fetch:
+  func: agent
+  command: "python3 /home/ubuntu/fmdata/store/scripts/fetch_fund_basic_open.py"
+  timeout: 300

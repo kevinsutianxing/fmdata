@@ -1,0 +1,10 @@
+name: margin_detail
+category: fundamentals
+description: "融资融券明细(上交所+深交所) - 最近30天个股融资余额/融券余量"
+file: fundamentals/margin_detail.csv
+source: agent
+update_freq: daily
+fetch:
+  func: agent
+  command: "python3 /home/ubuntu/fmdata/store/scripts/fetch_margin_detail.py"
+  timeout: 600

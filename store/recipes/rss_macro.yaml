@@ -1,0 +1,11 @@
+name: rss_macro
+category: overseas
+description: "RSS新闻-宏观/美联储/原油（CNBC Economy+WSJ+Bloomberg+FT直采，实时零延迟）"
+file: overseas/rss_macro.csv
+source: remote
+update_freq: daily
+fetch:
+  host: hk43
+  command: python3 ~/.openclaw/skills/news-data/scripts/rss_cli.py fetch --channel macro --days 1 --format csv
+  parser: raw
+  timeout: 30

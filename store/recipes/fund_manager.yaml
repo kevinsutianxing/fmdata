@@ -1,0 +1,8 @@
+category: market
+description: 公募基金经理大全（姓名/所属公司/管理规模/从业时间/最佳回报）
+update_freq: weekly
+fetch:
+  func: fund_manager_em
+file: market/fund_manager.csv
+name: fund_manager
+source: akshare

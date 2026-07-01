@@ -1,0 +1,9 @@
+name: factor_matrix_unified
+category: factors
+description: "统一因子矩阵(动量/波动/换手/市值等截面因子)"
+file: factors/factor_matrix_unified.csv
+source: agent
+update_freq: daily
+fetch:
+  command: python3 /home/ubuntu/fmdata/scripts/compute_factor_matrix.py
+  timeout: 600

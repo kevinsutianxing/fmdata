@@ -1,0 +1,12 @@
+name: news_tech
+category: overseas
+description: "新闻-半导体/科技(NewsAPI everything,免费版24h延迟)"
+file: overseas/news_tech.csv
+source: remote
+update_freq: daily
+fetch:
+  host: hk43
+  command: python3 ~/.openclaw/skills/news-data/scripts/news_cli.py preset tech --days 1
+  env: [NEWSAPI_KEY]
+  parser: raw
+  timeout: 60

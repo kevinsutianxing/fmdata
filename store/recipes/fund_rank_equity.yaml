@@ -1,0 +1,10 @@
+category: market
+description: 股票型开放式基金排行（含近3年收益率排名）
+update_freq: weekly
+fetch:
+  func: fund_open_fund_rank_em
+  params:
+    symbol: 股票型
+file: market/fund_rank_equity.csv
+name: fund_rank_equity
+source: akshare

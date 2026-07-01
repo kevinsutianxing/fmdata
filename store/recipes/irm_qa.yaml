@@ -1,0 +1,10 @@
+name: irm_qa
+category: fundamentals
+description: "互动易问答数据(巨潮) - 全市场投资者提问及公司回答全文"
+file: fundamentals/irm_qa.csv
+source: agent
+update_freq: daily
+fetch:
+  func: agent
+  command: "python3 /home/ubuntu/fmdata/store/scripts/fetch_irm_qa.py"
+  timeout: 3600

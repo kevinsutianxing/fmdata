@@ -1,0 +1,9 @@
+name: sw_daily
+category: market
+description: "申万一级行业完整日线(long format: ts_code/trade_date/close/pe/pb/vol/amount)"
+file: market/sw_daily.csv
+source: agent
+update_freq: daily
+fetch:
+  command: python3 /home/ubuntu/fmdata/scripts/refresh_sw_daily_full.py
+  timeout: 600

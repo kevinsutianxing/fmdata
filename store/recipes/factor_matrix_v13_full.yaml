@@ -1,0 +1,7 @@
+name: factor_matrix_v13_full
+category: factors
+description: "V13策略完整因子矩阵(10因子+行业标签+日期)"
+file: factors/factor_matrix_v13_full.csv
+source: static
+_auto_fetch: false
+update_freq: manual

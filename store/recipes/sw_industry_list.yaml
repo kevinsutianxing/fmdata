@@ -1,0 +1,11 @@
+category: reference
+description: 申万一级行业分类列表
+update_freq: weekly
+fetch:
+  func: index_classify
+  params:
+    level: L1
+    src: SW2021
+file: reference/sw_industry_list.csv
+name: sw_industry_list
+source: tushare

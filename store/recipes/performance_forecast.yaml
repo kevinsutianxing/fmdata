@@ -1,0 +1,10 @@
+name: performance_forecast
+category: fundamentals
+description: "业绩预告数据 - 最近6个月全市场, akshare stock_yjyg_em"
+file: fundamentals/performance_forecast.csv
+source: agent
+update_freq: daily
+fetch:
+  func: agent
+  command: "python3 /home/ubuntu/fmdata/store/scripts/fetch_performance_forecast.py"
+  timeout: 120

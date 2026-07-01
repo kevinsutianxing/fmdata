@@ -1,0 +1,10 @@
+name: research_reports
+category: fundamentals
+description: "个股研报(东方财富) - 全市场研究报告标题/评级/机构/EPS预测/PDF链接"
+file: fundamentals/research_reports.csv
+source: agent
+update_freq: weekly
+fetch:
+  func: agent
+  command: "python3 /home/ubuntu/fmdata/store/scripts/fetch_research_reports.py"
+  timeout: 3600

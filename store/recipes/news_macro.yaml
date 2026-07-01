@@ -1,0 +1,12 @@
+name: news_macro
+category: overseas
+description: "新闻-宏观/原油/美联储(NewsAPI everything,英文源,免费版24h延迟)"
+file: overseas/news_macro.csv
+source: remote
+update_freq: daily
+fetch:
+  host: hk43
+  command: python3 ~/.openclaw/skills/news-data/scripts/news_cli.py preset macro --days 1
+  env: [NEWSAPI_KEY]
+  parser: raw
+  timeout: 60

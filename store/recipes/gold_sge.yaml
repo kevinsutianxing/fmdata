@@ -1,0 +1,10 @@
+category: market
+description: SGE黄金基准价(Au99.99晚盘价), 日频, 2016至今
+update_freq: daily
+fetch:
+  date_col: 交易时间
+  func: spot_golden_benchmark_sge
+  params: {}
+file: market/gold_sge.csv
+name: gold_sge
+source: akshare

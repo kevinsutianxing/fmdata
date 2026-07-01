@@ -1,0 +1,8 @@
+category: market
+fetch:
+  func: daily_basic
+  params:
+    ts_code: 300750.SZ
+file: market/comps_db_300750.csv
+name: comps_db_300750
+source: tushare

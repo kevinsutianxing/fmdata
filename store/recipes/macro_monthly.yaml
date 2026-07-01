@@ -1,0 +1,9 @@
+name: macro_monthly
+category: macro
+description: "宏观经济月度综合指标(PMI/CPI/PPI/M2/信贷/LPR/SHIBOR组合)"
+file: macro/macro_monthly.csv
+source: agent
+update_freq: monthly
+fetch:
+  command: python3 /home/ubuntu/fmdata/scripts/compute_macro_monthly.py
+  timeout: 120

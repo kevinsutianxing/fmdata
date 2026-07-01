@@ -1,0 +1,9 @@
+name: sw_fundamentals_v9
+category: sw_extended
+description: "申万行业基本面增强版V9(ROE质量/动量/非经常性损益影响等派生指标)"
+file: sw_extended/sw_fundamentals_v9.csv
+source: agent
+update_freq: on_demand
+fetch:
+  command: python3 /home/ubuntu/fmdata/scripts/refresh_sw_fundamentals.py
+  timeout: 600

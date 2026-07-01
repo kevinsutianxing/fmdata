@@ -1,0 +1,8 @@
+category: market
+fetch:
+  func: cashflow
+  params:
+    ts_code: 600519.SH
+file: market/cashflow_600519.csv
+name: cashflow_600519
+source: tushare

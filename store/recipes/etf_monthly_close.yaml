@@ -1,0 +1,9 @@
+name: etf_monthly_close
+category: market
+description: 行业ETF月度收盘价矩阵, 由etf_daily派生
+file: market/etf_monthly_close.csv
+source: agent
+update_freq: daily
+fetch:
+  command: python3 /home/ubuntu/fmdata/scripts/refresh_etf_monthly.py
+  timeout: 60

@@ -1,0 +1,8 @@
+category: market
+fetch:
+  func: income
+  params:
+    ts_code: 000001.SZ
+file: market/income_000001.csv
+name: income_000001
+source: tushare

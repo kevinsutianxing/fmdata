@@ -1,0 +1,11 @@
+name: market_benchmark
+category: market
+description: "市场基准(沪深300日线)"
+file: market/market_benchmark.csv
+source: tushare
+update_freq: daily
+fetch:
+  func: index_daily
+  date_col: trade_date
+  params:
+    ts_code: "000300.SH"

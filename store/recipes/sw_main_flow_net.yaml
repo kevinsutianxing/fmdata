@@ -1,0 +1,9 @@
+name: sw_main_flow_net
+category: market
+description: "申万一级行业主力资金净流入(日频)"
+file: market/sw_main_flow_net.csv
+source: agent
+update_freq: daily
+fetch:
+  command: python3 /home/ubuntu/fmdata/scripts/refresh_sw_fund_flow.py
+  timeout: 900

@@ -1,0 +1,9 @@
+name: daily_matrix
+category: market
+description: "A股日线行情矩阵(开盘/收盘/最高/最低/成交量)"
+file: market/daily_matrix.csv
+source: tushare
+update_freq: daily
+fetch:
+  func: daily
+  date_col: trade_date

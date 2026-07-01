@@ -1,0 +1,7 @@
+name: factor_matrix_full
+category: factors
+description: "完整因子矩阵(所有因子,含V13+)，由factor_matrix_unified扩展"
+file: factors/factor_matrix_full.csv
+source: static
+_auto_fetch: false
+update_freq: manual

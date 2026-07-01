@@ -1,0 +1,14 @@
+category: market
+description: 沪深300历史成分权重（Tushare index_weight）
+update_freq: monthly
+fetch:
+  date_col: trade_date
+  func: index_weight
+  incremental: false
+  params:
+    end_date: '20260611'
+    index_code: 000300.SH
+    start_date: '20210101'
+file: market/index_weight_000300.csv
+name: index_weight_000300
+source: tushare

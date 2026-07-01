@@ -1,0 +1,10 @@
+name: tech_signals
+category: market
+description: "个股技术指标（RSI/MACD/KDJ/布林带/MA/ATR）"
+file: market/tech_signals.csv
+source: agent
+fetch:
+  command: python3 /home/ubuntu/fmdata/scripts/compute_tech_signals.py
+  output: market/tech_signals.csv
+  timeout: 600
+update_freq: daily

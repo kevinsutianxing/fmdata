@@ -1,0 +1,11 @@
+name: trade_calendar
+category: reference
+description: "A股交易日历"
+file: reference/trade_calendar.csv
+source: tushare
+update_freq: weekly
+fetch:
+  func: trade_cal
+  params:
+    exchange: SSE
+    start_date: "20200101"

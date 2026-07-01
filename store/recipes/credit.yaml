@@ -1,0 +1,10 @@
+category: macro
+description: 新增人民币信贷(月度)
+update_freq: monthly
+fetch:
+  date_col: 月份
+  func: macro_china_new_financial_credit
+  incremental: false
+file: macro/credit.csv
+name: credit
+source: akshare

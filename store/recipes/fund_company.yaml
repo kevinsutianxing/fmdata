@@ -1,0 +1,8 @@
+category: market
+description: 公募基金公司排名列表（管理规模/基金数/经理数）
+update_freq: weekly
+fetch:
+  func: fund_aum_em
+file: market/fund_company.csv
+name: fund_company
+source: akshare

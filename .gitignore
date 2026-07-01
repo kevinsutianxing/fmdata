@@ -1,0 +1,33 @@
+# Secrets
+.env
+
+# Generated registry (rebuilt from store/)
+registry.json
+
+# Data files (keep recipes/config only, not the CSV/Parquet data)
+store/market/
+store/macro/
+store/reference/
+store/fundamentals/
+store/factors/
+store/overseas/
+store/strategy/
+store/sw_extended/
+store/cjpy/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Backup files
+*.bak
+*.bak.*
+*.tmp
+
+# IDE
+.vscode/
+.idea/

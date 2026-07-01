@@ -1,0 +1,10 @@
+category: market
+description: 混合型开放式基金排行（含近3年收益率排名）
+update_freq: weekly
+fetch:
+  func: fund_open_fund_rank_em
+  params:
+    symbol: 混合型
+file: market/fund_rank_hybrid.csv
+name: fund_rank_hybrid
+source: akshare

@@ -1,0 +1,12 @@
+category: market
+description: 中债综合指数(净价/全价/财富), 日频
+update_freq: daily
+fetch:
+  date_col: date
+  func: bond_composite_index_cbond
+  params:
+    indicator: 财富
+    period: 总值
+file: market/bond_composite_index.csv
+name: bond_composite_index
+source: akshare

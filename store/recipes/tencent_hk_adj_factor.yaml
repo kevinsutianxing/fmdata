@@ -1,0 +1,9 @@
+name: tencent_hk_adj_factor
+category: overseas
+description: "腾讯控股00700.HK日线行情(复用tencent_hk_daily)"
+file: overseas/tencent_hk_adj_factor.csv
+source: agent
+update_freq: daily
+fetch:
+  command: cp /home/ubuntu/fmdata/store/overseas/tencent_hk_daily.csv /home/ubuntu/fmdata/store/overseas/tencent_hk_adj_factor.csv
+  timeout: 10

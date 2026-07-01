@@ -1,0 +1,9 @@
+name: ppi
+category: macro
+description: "PPI月度数据（同比/环比/累计，含生产资料/生活资料分项）"
+file: macro/ppi.csv
+source: tushare
+update_freq: monthly
+fetch:
+  func: cn_ppi
+  date_col: month

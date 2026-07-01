@@ -1,0 +1,9 @@
+name: sw_fundamentals_v10
+category: sw_extended
+description: "申万行业基本面扩展V10(营收/净利/ROE/毛利率等)"
+file: sw_extended/sw_fundamentals_v10.csv
+source: agent
+update_freq: weekly
+fetch:
+  command: python3 /home/ubuntu/fmdata/scripts/refresh_sw_fundamentals.py
+  timeout: 600

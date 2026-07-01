@@ -1,0 +1,13 @@
+category: overseas
+description: 腾讯控股00700.HK全量历史日线(前复权OHLCV)
+update_freq: daily
+fetch:
+  date_col: trade_date
+  func: hk_daily
+  params:
+    end_date: '20260530'
+    start_date: '20040616'
+    ts_code: 00700.HK
+file: overseas/tencent_hk_daily.csv
+name: tencent_hk_daily
+source: tushare

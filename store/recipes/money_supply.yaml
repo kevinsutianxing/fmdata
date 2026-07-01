@@ -1,0 +1,9 @@
+category: macro
+description: 货币供应量M0/M1/M2月度同比
+update_freq: monthly
+fetch:
+  date_col: month
+  func: cn_m
+file: macro/money_supply.csv
+name: money_supply
+source: tushare

@@ -1,0 +1,7 @@
+name: v13_deployment_monthly
+category: strategy
+description: "V13策略月度部署记录(日期+推荐行业+实际收益)"
+file: strategy/v13_deployment_monthly.csv
+source: static
+_auto_fetch: false
+update_freq: manual

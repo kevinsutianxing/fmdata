@@ -1,0 +1,9 @@
+category: market
+update_freq: manual
+fetch:
+  func: balancesheet
+  params:
+    ts_code: 300750.SZ
+file: market/balancesheet_300750.csv
+name: balancesheet_300750
+source: tushare

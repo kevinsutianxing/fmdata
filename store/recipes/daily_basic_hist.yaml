@@ -1,0 +1,10 @@
+name: daily_basic_hist
+category: market
+description: "A股日估值指标历史全量(PE/PB/PS/总市值), 2010至今"
+file: market/daily_basic_hist.csv
+source: tushare
+update_freq: daily
+fetch:
+  func: daily_basic
+  date_col: trade_date
+  mode: append

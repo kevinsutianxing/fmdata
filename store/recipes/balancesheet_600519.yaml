@@ -1,0 +1,8 @@
+category: market
+fetch:
+  func: balancesheet
+  params:
+    ts_code: 600519.SH
+file: market/balancesheet_600519.csv
+name: balancesheet_600519
+source: tushare

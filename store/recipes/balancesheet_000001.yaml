@@ -1,0 +1,8 @@
+category: market
+fetch:
+  func: balancesheet
+  params:
+    ts_code: 000001.SZ
+file: market/balancesheet_000001.csv
+name: balancesheet_000001
+source: tushare

@@ -1,0 +1,8 @@
+category: market
+fetch:
+  func: daily_basic
+  params:
+    trade_date: '20260616'
+file: market/comps_db_market_test.csv
+name: comps_db_market_test
+source: tushare

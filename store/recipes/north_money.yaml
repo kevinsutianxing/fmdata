@@ -1,0 +1,12 @@
+name: north_money
+category: market
+description: "沪深港通资金流向（北向/南向/沪股通/深股通）"
+file: macro/north_money.csv
+source: tushare
+update_freq: daily
+fetch:
+  func: moneyflow_hsgt
+  date_col: trade_date
+  params:
+    start_date: "20250101"
+    end_date: "20261231"

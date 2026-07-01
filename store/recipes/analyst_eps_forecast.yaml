@@ -1,0 +1,7 @@
+name: analyst_eps_forecast
+category: fundamentals
+description: "分析师EPS预测汇总(东方财富, 含研报数/评级分布/2025-2028年预测EPS)"
+file: fundamentals/analyst_eps_forecast.csv
+source: static
+_auto_fetch: false
+update_freq: monthly

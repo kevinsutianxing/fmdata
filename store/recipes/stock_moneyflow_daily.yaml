@@ -1,0 +1,11 @@
+category: market
+description: 个股资金流向日级全市场(tushare moneyflow by trade_date)
+update_freq: daily
+fetch:
+  date_col: trade_date
+  func: moneyflow
+  params:
+    trade_date: 'latest'
+file: market/stock_moneyflow_daily.csv
+name: stock_moneyflow_daily
+source: tushare

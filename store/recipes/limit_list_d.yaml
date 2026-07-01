@@ -1,0 +1,11 @@
+category: market
+description: 每日涨跌停统计(tushare limit_list_d)
+update_freq: daily
+fetch:
+  date_col: trade_date
+  func: limit_list_d
+  params:
+    trade_date: 'latest'
+file: market/limit_list_d.csv
+name: limit_list_d
+source: tushare

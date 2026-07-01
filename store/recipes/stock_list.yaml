@@ -1,0 +1,8 @@
+name: stock_list
+category: reference
+description: "A股股票列表(代码/名称/行业/上市日期)"
+file: reference/stock_list.csv
+source: tushare
+update_freq: daily
+fetch:
+  func: stock_basic

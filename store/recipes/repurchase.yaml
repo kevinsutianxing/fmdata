@@ -1,0 +1,10 @@
+name: repurchase
+category: fundamentals
+description: "全市场回购数据(东方财富) - 实施进度/涉及金额/进展说明"
+file: fundamentals/repurchase.csv
+source: agent
+update_freq: weekly
+fetch:
+  func: agent
+  command: "python3 /home/ubuntu/fmdata/store/scripts/fetch_repurchase.py"
+  timeout: 120

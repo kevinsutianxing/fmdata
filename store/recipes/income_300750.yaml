@@ -1,0 +1,9 @@
+category: market
+update_freq: manual
+fetch:
+  func: income
+  params:
+    ts_code: 300750.SZ
+file: market/income_300750.csv
+name: income_300750
+source: tushare

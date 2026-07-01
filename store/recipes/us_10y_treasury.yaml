@@ -1,0 +1,13 @@
+name: us_10y_treasury
+category: overseas
+description: "美国10年期国债收益率"
+file: overseas/us_10y_treasury.csv
+source: remote
+update_freq: daily
+fetch:
+  host: hk43
+  command: python3 ~/.openclaw/skills/fred-data/scripts/fred_cli.py observations DGS10 --start 2020-01-01 --format csv
+  env: [FRED_API_KEY]
+  parser: fred
+  series_id: DGS10
+  date_col: date

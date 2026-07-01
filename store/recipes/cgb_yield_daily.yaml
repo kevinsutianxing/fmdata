@@ -1,0 +1,9 @@
+category: macro
+description: 中债国债收益率日线(10年期为主), 来源akshare bond_china_yield 过滤国债曲线
+update_freq: daily
+fetch:
+  command: python3 /home/ubuntu/fmdata/scripts/refresh_cgb_yield.py
+  timeout: 120
+file: macro/cgb_yield_daily.csv
+name: cgb_yield_daily
+source: agent

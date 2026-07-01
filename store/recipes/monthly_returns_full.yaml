@@ -1,0 +1,7 @@
+name: monthly_returns_full
+category: strategy
+description: "申万一级行业月度收益全历史(用于回测和IC计算)"
+file: strategy/monthly_returns_full.csv
+source: static
+_auto_fetch: false
+update_freq: manual

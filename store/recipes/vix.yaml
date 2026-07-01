@@ -1,0 +1,13 @@
+name: vix
+category: overseas
+description: "VIX波动率指数"
+file: overseas/vix.csv
+source: remote
+update_freq: daily
+fetch:
+  host: hk43
+  command: python3 ~/.openclaw/skills/fred-data/scripts/fred_cli.py observations VIXCLS --start 2020-01-01 --format csv
+  env: [FRED_API_KEY]
+  parser: fred
+  series_id: VIXCLS
+  date_col: date

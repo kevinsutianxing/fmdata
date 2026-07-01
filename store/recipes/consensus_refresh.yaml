@@ -1,0 +1,10 @@
+name: consensus_refresh
+category: fundamentals
+description: "分析师一致预期数据刷新 - analyst_consensus + consensus_detail + consensus_proxy"
+file: fundamentals/analyst_consensus.csv
+source: agent
+update_freq: weekly
+fetch:
+  func: agent
+  command: "python3 /home/ubuntu/fmdata/store/scripts/refresh_consensus.py"
+  timeout: 300

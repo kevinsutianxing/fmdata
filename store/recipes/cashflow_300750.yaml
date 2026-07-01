@@ -1,0 +1,9 @@
+category: market
+update_freq: manual
+fetch:
+  func: cashflow
+  params:
+    ts_code: 300750.SZ
+file: market/cashflow_300750.csv
+name: cashflow_300750
+source: tushare

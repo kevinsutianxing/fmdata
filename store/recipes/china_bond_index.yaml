@@ -1,0 +1,10 @@
+category: market
+description: 中债综合指数(财富)日线行情, 来源akshare bond_zh_cov
+update_freq: daily
+fetch:
+  date_col: date
+  func: bond_zh_cov
+  params: {}
+file: market/china_bond_index.csv
+name: china_bond_index
+source: akshare

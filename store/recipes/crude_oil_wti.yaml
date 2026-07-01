@@ -1,0 +1,13 @@
+name: crude_oil_wti
+category: overseas
+description: "WTI原油价格（美元/桶）"
+file: overseas/crude_oil_wti.csv
+source: remote
+update_freq: daily
+fetch:
+  host: hk43
+  command: python3 ~/.openclaw/skills/fred-data/scripts/fred_cli.py observations DCOILWTICO --start 2020-01-01 --format csv
+  env: [FRED_API_KEY]
+  parser: fred
+  series_id: DCOILWTICO
+  date_col: date

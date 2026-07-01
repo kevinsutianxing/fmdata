@@ -1,0 +1,11 @@
+category: market
+description: 沪深300指数月线OHLCV
+update_freq: monthly
+fetch:
+  date_col: trade_date
+  func: index_monthly
+  params:
+    ts_code: 000300.SH
+file: market/hs300_monthly.csv
+name: hs300_monthly
+source: tushare

@@ -1,0 +1,9 @@
+category: macro
+description: LPR利率历史(1年/5年)
+update_freq: daily
+fetch:
+  date_col: date
+  func: shibor_lpr
+file: macro/lpr.csv
+name: shibor_lpr
+source: tushare

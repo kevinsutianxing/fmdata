@@ -1,0 +1,7 @@
+name: factor_matrix_v13
+category: factors
+description: "V13策略10因子矩阵(CS因子子集+新增因子)"
+file: factors/factor_matrix_v13.csv
+source: static
+_auto_fetch: false
+update_freq: manual

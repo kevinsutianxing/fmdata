@@ -1,0 +1,10 @@
+name: cjpy_market_daily_sample
+category: market
+description: "cjpy日线行情样本(平安银行SZ000001) - 长江金工/天软TS-OPI数据, agent脚本增量拉取"
+file: cjpy/market_daily.csv
+source: agent
+update_freq: daily
+fetch:
+  func: agent
+  command: "python3 /home/ubuntu/fmdata/scripts/fetch_cjpy.py --dataset market_daily --code SZ000001 --out /home/ubuntu/fmdata/store/cjpy/market_daily.csv"
+  timeout: 120

@@ -1,0 +1,12 @@
+name: analyst_consensus
+category: fundamentals
+description: "A股分析师一致预期：当年/未来3年EPS预测、机构评级数量(买入/增持/中性/减持/卖出)、目标价"
+file: fundamentals/analyst_consensus.csv
+display_name: 分析师一致预期(EPS/评级)
+source: akshare
+update_freq: weekly
+fetch:
+  func: stock_profit_forecast_em
+  params:
+    symbol: ""
+  notes: "akshare stock_profit_forecast_em returns 2725 stocks with 2025-2028 consensus EPS. Column mapping: 代码→SECURITY_CODE, 名称→SECURITY_NAME_ABBR, 研报数→RATING_ORG_NUM, 2025预测每股收益→EPS1, etc."

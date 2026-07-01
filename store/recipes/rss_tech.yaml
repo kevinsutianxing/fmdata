@@ -1,0 +1,11 @@
+name: rss_tech
+category: overseas
+description: "RSS新闻-科技/半导体/AI（CNBC Tech+NYT Tech+Ars Technica直采，实时零延迟）"
+file: overseas/rss_tech.csv
+source: remote
+update_freq: daily
+fetch:
+  host: hk43
+  command: python3 ~/.openclaw/skills/news-data/scripts/rss_cli.py fetch --channel tech --days 1 --format csv
+  parser: raw
+  timeout: 30
