@@ -32,4 +32,13 @@ jobs:
       - name: Compile research modules
         run: python -m py_compile fmdata/research_snapshot.py fmdata/research_server.py
       - name: Run snapshot contract tests
-        run: python -m pytest -q --tb=short tests/test_research_snapshot.py
+        run: |
+          set -o pipefail
+          python -m pytest -q --tb=short tests/test_research_snapshot.py 2>&1 | tee pytest-research-snapshot.log
+      - name: Upload test log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: research-snapshot-test-log
+          path: pytest-research-snapshot.log
+          if-no-files-found: error
