@@ -14,6 +14,7 @@ store/overseas/
 store/strategy/
 store/sw_extended/
 store/cjpy/
+store/_snapshots/
 
 # Python
 __pycache__/

@@ -83,8 +83,12 @@ def cmd_update(args):
 def cmd_serve(args):
     import uvicorn
     from fmdata.config import HTTP_HOST, HTTP_PORT
-    uvicorn.run("fmdata.server:app", host=args.host or HTTP_HOST,
-                port=args.port or HTTP_PORT, reload=args.reload)
+    uvicorn.run(
+        "fmdata.research_server:app",
+        host=args.host or HTTP_HOST,
+        port=args.port or HTTP_PORT,
+        reload=args.reload,
+    )
 
 
 def main():
@@ -112,7 +116,7 @@ def main():
     p_update.add_argument("dataset", help="Dataset name, 'reference', or 'all'")
 
     # serve
-    p_serve = sub.add_parser("serve", help="Start HTTP server")
+    p_serve = sub.add_parser("serve", help="Start HTTP server with research snapshot API")
     p_serve.add_argument("--host", default=None)
     p_serve.add_argument("--port", type=int, default=None)
     p_serve.add_argument("--reload", action="store_true")
