@@ -49,14 +49,14 @@ def last_trading_day(ref_date=None):
     # Try fmdata trade_calendar for holiday check
     try:
         import requests as _req
-        r = _req.get(f"http://127.0.0.1:1934/calendar/is-trade-day?date={d.strftime('%Y%m%d')}", timeout=3)
+        r = _req.get(f"http://127.0.0.1:1934/reference/calendar?date={d.strftime('%Y%m%d')}", timeout=3)
         if r.status_code == 200:
             is_trade = r.json().get("is_trade_day", True)
             while not is_trade:
                 d -= timedelta(days=1)
                 while d.weekday() >= 5:
                     d -= timedelta(days=1)
-                r = _req.get(f"http://127.0.0.1:1934/calendar/is-trade-day?date={d.strftime('%Y%m%d')}", timeout=3)
+                r = _req.get(f"http://127.0.0.1:1934/reference/calendar?date={d.strftime('%Y%m%d')}", timeout=3)
                 is_trade = r.json().get("is_trade_day", True) if r.status_code == 200 else True
     except Exception:
         pass  # fallback OK
