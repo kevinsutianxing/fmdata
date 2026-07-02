@@ -11,16 +11,10 @@ EnvironmentFile=/home/ubuntu/fmdata/.env
 ExecStart=/usr/bin/python3 -m uvicorn fmdata.research_server:app --host 127.0.0.1 --port 1934
 Restart=on-failure
 RestartSec=5
+# Note: NoNewPrivileges/ProtectSystem/RestrictSUIDSGID etc. require CAP_SETPCAP
+# which user sessions don't have. They are kept for a future system-service
+# deployment; removed here so the user service can start.
 UMask=0077
-NoNewPrivileges=true
-PrivateTmp=true
-ProtectSystem=full
-ProtectKernelTunables=true
-ProtectKernelModules=true
-ProtectControlGroups=true
-RestrictSUIDSGID=true
-LockPersonality=true
-RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
 
 [Install]
 WantedBy=default.target
