@@ -46,8 +46,7 @@ AGENT_SCRIPT_ALLOWLIST = {
 REMOTE_HOST_ALLOWLIST = {"hk43"}
 
 
-# Dual QG proxy pool credentials
-# Pool 0 is configured via env vars. Pool 1 is an optional fallback.
+# Dual QG proxy pool credentials (2026-07-01: 旧池快耗尽, kevinsu 池做 fallback via env)
 _QG_POOLS = [
     {"key": os.environ.get("QG_PROXY_AUTHKEY", ""), "pwd": os.environ.get("QG_PROXY_AUTHPWD", "")},
     {"key": os.environ.get("QG_PROXY_AUTHKEY_2", ""), "pwd": os.environ.get("QG_PROXY_AUTHPWD_2", "")},

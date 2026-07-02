@@ -34,7 +34,7 @@ MONTH_ENDS = [
 ]
 
 
-# Dual QG proxy pool
+# Dual QG proxy pool (2026-07-01: 旧池快耗尽, kevinsu 池 fallback via env)
 _QG_POOLS = [
     {"key": os.environ.get("QG_PROXY_AUTHKEY", ""), "pwd": os.environ.get("QG_PROXY_AUTHPWD", "")},
     {"key": os.environ.get("QG_PROXY_AUTHKEY_2", ""), "pwd": os.environ.get("QG_PROXY_AUTHPWD_2", "")},

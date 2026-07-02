@@ -13,9 +13,9 @@ import json, requests, csv, sys, time, os
 from pathlib import Path
 from datetime import date
 
-APP_ID = os.environ.get("FEISHU_APP_ID", "your_app_id")
-APP_SECRET = os.environ.get("FEISHU_APP_SECRET", "your_app_secret")
-CHAT_ID = os.environ.get("FEISHU_CHAT_ID", "your_chat_id")
+APP_ID = os.environ.get("FEISHU_APP_ID", "")
+APP_SECRET = os.environ.get("FEISHU_APP_SECRET", "")
+CHAT_ID = os.environ.get("FEISHU_CHAT_ID", "oc_34b631278d927943a58c40fdba1b35b5")
 
 REPORT_PATH = Path.home() / "fmdata/store/fundamentals/semiannual_investment_report.md"
 CSV_PATH = Path.home() / "fmdata/store/fundamentals/semiannual_investment.csv"
