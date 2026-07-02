@@ -94,12 +94,12 @@ def last_trading_day(ref_date=None):
     d = (ref_date or TODAY) - timedelta(days=0)
     while d.weekday() >= 5: d -= timedelta(days=1)
     try:
-        r = requests.get(f"http://127.0.0.1:1934/calendar/is-trade-day?date={d.strftime('%Y%m%d')}", timeout=3)
+        r = requests.get(f"http://127.0.0.1:1934/reference/calendar?date={d.strftime('%Y%m%d')}", timeout=3)
         if r.status_code == 200 and not r.json().get("is_trade_day", True):
             while True:
                 d -= timedelta(days=1)
                 while d.weekday() >= 5: d -= timedelta(days=1)
-                r = requests.get(f"http://127.0.0.1:1934/calendar/is-trade-day?date={d.strftime('%Y%m%d')}", timeout=3)
+                r = requests.get(f"http://127.0.0.1:1934/reference/calendar?date={d.strftime('%Y%m%d')}", timeout=3)
                 if r.status_code != 200 or r.json().get("is_trade_day", True): break
     except Exception: pass
     return d

@@ -376,6 +376,14 @@ def get_industries():
 def get_industry_map(ts_code: Optional[str] = Query(None)):
     from fmdata.reference import stock_industry_map
     df = stock_industry_map()
+    if "ts_code" not in df.columns:
+        # The cached map is the industry list fallback (tushare index_member
+        # fetch failed at build time), not a stock→industry mapping.
+        return {
+            "status": "unavailable",
+            "message": "stock→industry map not built; showing industry list instead",
+            "data": _df_to_json(df),
+        }
     if ts_code:
         df = df[df["ts_code"] == ts_code]
     return _df_to_json(df)
@@ -494,6 +502,19 @@ def get_stock_daily(
 def get_factor_matrix():
     from fmdata.market import factor_matrix
     return _df_to_json(factor_matrix())
+
+
+# ---- Macro ----
+# Semantic aliases for /data/{name} on macro datasets.
+# Valid names: cpi, ppi, pmi, money_supply, credit, lpr, shibor, macro_monthly
+
+@app.get("/macro/{name}")
+def get_macro(name: str):
+    from fmdata.macro import get as get_macro_df
+    df = get_macro_df(name)
+    if df.empty:
+        return JSONResponse(status_code=404, content={"error": f"macro dataset '{name}' not found or empty"})
+    return _df_to_json(df)
 
 
 @app.post("/recipes")
