@@ -1,14 +1,26 @@
 [Unit]
-Description=fmdata Financial Data Middleware
-After=network.target
+Description=fmdata Financial Data Middleware (with research snapshot API)
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple
 WorkingDirectory=/home/ubuntu/fmdata
-ExecStart=/usr/bin/python3 -m uvicorn fmdata.server:app --host 127.0.0.1 --port 1934
+EnvironmentFile=/home/ubuntu/fmdata/.env
+# user-service deployment: system python3 + pip install --user (no .venv)
+ExecStart=/usr/bin/python3 -m uvicorn fmdata.research_server:app --host 127.0.0.1 --port 1934
 Restart=on-failure
 RestartSec=5
-EnvironmentFile=/home/ubuntu/fmdata/.env
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
 
 [Install]
 WantedBy=default.target

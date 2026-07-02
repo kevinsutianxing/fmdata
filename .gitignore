@@ -15,6 +15,10 @@ store/strategy/
 store/sw_extended/
 store/cjpy/
 
+# Local data caches (por_plus backtest data, etc.)
+cache/
+store/_snapshots/
+
 # Python
 __pycache__/
 *.pyc

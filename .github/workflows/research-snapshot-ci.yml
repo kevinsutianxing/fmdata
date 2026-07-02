@@ -1,0 +1,44 @@
+name: Research Snapshot CI
+
+on:
+  pull_request:
+    paths:
+      - "fmdata/**"
+      - "tests/**"
+      - "setup.py"
+      - ".github/workflows/research-snapshot-ci.yml"
+  push:
+    branches: [main]
+    paths:
+      - "fmdata/**"
+      - "tests/**"
+      - "setup.py"
+      - ".github/workflows/research-snapshot-ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  research-snapshot-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install package and test dependencies
+        run: python -m pip install -q --disable-pip-version-check -e . pytest httpx
+      - name: Compile research modules
+        run: python -m py_compile fmdata/research_snapshot.py fmdata/research_server.py
+      - name: Run snapshot contract tests
+        run: |
+          set -o pipefail
+          python -m pytest -q --tb=short tests/test_research_snapshot.py 2>&1 | tee pytest-research-snapshot.log
+      - name: Upload test log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: research-snapshot-test-log
+          path: pytest-research-snapshot.log
+          if-no-files-found: error
