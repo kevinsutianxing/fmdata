@@ -118,6 +118,191 @@ def get_dataset_status(dataset: str):
     return ds
 
 
+# ---- Catalog (agent-friendly discovery) ----
+# /catalog: curated view — ~130 named datasets, not 13k code-split copies.
+# /search: fuzzy find by name / alias / category.
+
+import re as _re
+
+# Patterns considered "noise" (auto-split copies) in the default catalog view.
+_CODE_PURE = _re.compile(r"^\d{6}$")                       # 000001 (fund nav per code)
+_STATEMENT_BY_CODE = _re.compile(r"^(income|balancesheet|cashflow|fina_indicator|comps_db)_\d{6}$")
+_DATED_SNAPSHOT = _re.compile(r"^[a-z_]+_\d{8}$", _re.IGNORECASE)   # cninfo_ratings_20210129
+_MONTHLY_SNAPSHOT = _re.compile(r"^[a-z_]+_\d{6}$", _re.IGNORECASE) # xxx_202101
+
+
+def _classify_dataset(name: str) -> str:
+    if _CODE_PURE.match(name):
+        return "code_split"
+    if _STATEMENT_BY_CODE.match(name):
+        return "statement_by_code"
+    if _DATED_SNAPSHOT.match(name):
+        return "dated_snapshot"
+    if _MONTHLY_SNAPSHOT.match(name):
+        return "monthly_snapshot"
+    return "named"
+
+
+def _catalog_entry(name: str, ds: dict, recipes: dict) -> dict:
+    recipe = recipes.get(name, {})
+    return {
+        "name": name,
+        "description": recipe.get("description") or ds.get("description", ""),
+        "category": ds.get("category", recipe.get("category", "")),
+        "rows": ds.get("rows", 0),
+        "last_updated": ds.get("last_updated"),
+        "has_recipe": bool(recipe),
+        "update_freq": recipe.get("update_freq", ""),
+        "fetch_method": (
+            "recipe (auto-refresh)" if recipe.get("update_freq")
+            else "on-demand POST /fetch/{name}" if recipe
+            else "static file (no recipe — cannot refresh via API)"
+        ),
+        "endpoint": f"/data/{name}",
+    }
+
+
+@app.get("/catalog")
+def get_catalog(
+    category: Optional[str] = Query(None, description="按类别筛选: market/macro/reference/fundamentals/overseas/factors/strategy"),
+    include: Optional[str] = Query(None, description="展开默认隐藏的分组: dated/monthly/statement/code_split/all"),
+    q: Optional[str] = Query(None, description="子串过滤（大小写不敏感，匹配 name/description）"),
+):
+    """Curated dataset catalog for agent discovery.
+
+    Default view: ~130 named datasets (excludes 13k code-split copies and
+    date-stamped snapshots). Use ?include=all to see everything, or
+    ?include=dated to layer in a specific group.
+
+    No auth — agents should be able to browse data without a key.
+    """
+    datasets = list_datasets()
+    recipes = _all_recipes()
+    include_set = set((include or "").split(",")) if include else set()
+
+    groups = {"named": [], "statement_by_code": [], "dated_snapshot": [], "monthly_snapshot": [], "code_split": []}
+    for name, ds in datasets.items():
+        cls = _classify_dataset(name)
+        if cls == "named" or cls in include_set or "all" in include_set:
+            groups[cls].append(name)
+
+    # Build entries
+    entries = []
+    for cls, names in groups.items():
+        if not names:
+            continue
+        if cls == "code_split" and len(names) > 200 and "all" not in include_set:
+            # Never dump 13k code-splits individually; summarize
+            continue
+        for name in sorted(names):
+            entries.append(_catalog_entry(name, datasets[name], recipes))
+
+    # Optional filters
+    if category:
+        entries = [e for e in entries if e["category"] == category]
+    if q:
+        ql = q.lower()
+        entries = [e for e in entries if ql in e["name"].lower() or ql in (e["description"] or "").lower()]
+
+    by_cat = {}
+    for e in entries:
+        by_cat.setdefault(e["category"] or "other", []).append(e["name"])
+
+    return {
+        "count": len(entries),
+        "total_in_fmdata": len(datasets),
+        "note": (
+            "Default view shows named datasets only. 13k+ code-split copies "
+            "(fund navs, per-code statements) are hidden — use ?include=code_split "
+            "or ?include=all to see them."
+        ),
+        "categories": {c: len(v) for c, v in sorted(by_cat.items())},
+        "datasets": {e["name"]: e for e in entries},
+    }
+
+
+@app.get("/search")
+def search_datasets(
+    q: str = Query(..., description="搜索词（中英文，匹配数据集名/描述/类别）"),
+):
+    """Fuzzy search across all datasets by name / description / category.
+
+    Returns ranked matches with the endpoint + how to fetch. Designed for
+    agents that don't know whether a metric is called 'cpi' or 'consumer_price'.
+    """
+    if not q.strip():
+        return JSONResponse(status_code=400, content={"error": "q 参数不能为空"})
+
+    datasets = list_datasets()
+    recipes = _all_recipes()
+    ql = q.lower()
+
+    # Score every dataset (incl. code-splits — search should find them)
+    scored = []
+    for name, ds in datasets.items():
+        recipe = recipes.get(name, {})
+        desc = (recipe.get("description") or ds.get("description") or "")
+        cat = ds.get("category", recipe.get("category", ""))
+        haystack = f"{name} {desc} {cat}".lower()
+
+        if ql not in haystack:
+            continue
+
+        # Rank: exact name > name prefix > description > category
+        score = 0
+        if name.lower() == ql:
+            score = 100
+        elif name.lower().startswith(ql):
+            score = 80
+        elif ql in name.lower():
+            score = 60
+        elif ql in desc.lower():
+            score = 40
+        else:
+            score = 10
+
+        # Penalize code-split noise so named datasets surface first
+        if _classify_dataset(name) != "named":
+            score -= 20
+
+        scored.append((score, name, ds, recipe, desc, cat))
+
+    scored.sort(key=lambda x: (-x[0], x[1]))
+    results = []
+    for score, name, ds, recipe, desc, cat in scored[:30]:
+        results.append({
+            "name": name,
+            "description": desc,
+            "category": cat,
+            "score": score,
+            "rows": ds.get("rows", 0),
+            "endpoint": f"/data/{name}",
+            "fetch_method": (
+                "recipe (auto-refresh)" if recipe.get("update_freq")
+                else "on-demand POST /fetch/{name}" if recipe
+                else "static file"
+            ),
+        })
+
+    return {
+        "query": q,
+        "matches": len(results),
+        "results": results,
+        "hint": "没找到？POST /recipes 可注册新数据集（见 /how-to-add）。" if not results else "",
+    }
+
+
+def _all_recipes() -> dict:
+    """Load all recipes as {name: recipe_dict}. Lazy import to avoid startup cost."""
+    from fmdata.registry import load_registry
+    reg = load_registry()
+    recipes = {}
+    for name, ds in reg.get("datasets", {}).items():
+        if "recipe" in ds:
+            recipes[name] = ds["recipe"]
+    return recipes
+
+
 # ---- Health ----
 
 @app.get("/health")
