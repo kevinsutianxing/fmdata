@@ -1,6 +1,7 @@
 """Dataset registry — auto-discovery, recipes, metadata tracking."""
 import json
 import logging
+import os
 from pathlib import Path
 from datetime import datetime
 from typing import Optional
@@ -31,8 +32,12 @@ def load_registry() -> dict:
 
 def save_registry(reg: dict):
     reg["updated_at"] = datetime.now().isoformat()
-    with open(REGISTRY_FILE, "w") as f:
+    # 原子写：先写临时文件再 rename，避免并发 load_registry() 读到截断 JSON
+    # （4.2MB registry 非原子 open("w") 会让 truncate→dump 之间任何 reader 拿到不完整文件）
+    tmp = REGISTRY_FILE.with_suffix(".json.tmp")
+    with open(tmp, "w") as f:
         json.dump(reg, f, indent=2, ensure_ascii=False)
+    os.replace(tmp, REGISTRY_FILE)
     logger.debug(f"registry saved: {len(reg['datasets'])} datasets")
 
 
