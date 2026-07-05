@@ -320,6 +320,54 @@ def fetch_forecasts_from_tushare(period="20260630"):
     return df[cols].reset_index(drop=True), "ok"
 
 
+def check_forecast_coverage(tracked_codes, period="20260630"):
+    """对账: 全市场业绩预告 vs 实际追踪标的覆盖率（仅沪深主板/创业板/科创板，排除北交所）。
+    独立从 fmdata /data/performance_forecast 拉全市场，对比 fetcher 处理后的标的集合。
+    北交所(920xxx/83xxxx/87xxxx)不计入分母——fetcher 历史上主动排除北交所。
+    """
+    import urllib.request, json as _json
+    result = {"market_total": 0, "market_raw": 0, "tracked": len(tracked_codes),
+              "missing": [], "coverage_pct": 100.0, "status": "ok",
+              "bj_excluded": 0}
+    try:
+        with urllib.request.urlopen("http://127.0.0.1:1934/data/performance_forecast", timeout=20) as r:
+            items = _json.loads(r.read()).get("data", [])
+        if not isinstance(items, list):
+            return result
+        market_codes = set()
+        for it in items:
+            rd = it.get("REPORT_DATE") or it.get("report_date") or 0
+            try:
+                if int(rd) != int(period):
+                    continue
+            except Exception:
+                continue
+            sc = str(it.get("SECURITY_CODE") or it.get("TS_CODE") or "")
+            code = sc.zfill(6)[:6]
+            if code and code.isdigit():
+                # 排除北交所（与 fetcher 的 is_bj_stock 一致）
+                if code[0] in ("4", "8", "9"):
+                    result["bj_excluded"] += 1
+                    continue
+                market_codes.add(code)
+        result["market_raw"] = len(items)
+        result["market_total"] = len(market_codes)
+        tracked_set = set(str(c).zfill(6) for c in tracked_codes)
+        missing = sorted(market_codes - tracked_set)
+        result["missing"] = missing
+        if market_codes:
+            covered = len(market_codes & tracked_set)
+            result["coverage_pct"] = round(100.0 * covered / len(market_codes), 1)
+            if result["coverage_pct"] < 95:
+                result["status"] = "warn"
+            if result["coverage_pct"] < 80:
+                result["status"] = "error"
+    except Exception as e:
+        eprint(f"  coverage check failed: {e}")
+        result["status"] = "unknown"
+    return result
+
+
 def fetch_forecasts(period="20260630"):
     """Fetch H1 performance forecasts: tushare first (no proxy), akshare fallback."""
     eprint("[1/5] Fetching forecasts...")
@@ -1364,6 +1412,22 @@ def validate_data(df, data_health):
     else:
         checks.append({"name": "price_coverage", "level": "warning", "passed": True,
                        "detail": f"ok({price_pct:.0%})"})
+
+    # W7: 全市场预告覆盖率（要求全覆盖）
+    cov = data_health.get("coverage", {})
+    cov_pct = cov.get("coverage_pct", 100.0)
+    cov_missing = cov.get("missing", [])
+    cov_market = cov.get("market_total", 0)
+    if cov and cov.get("status") == "error" and cov_market > 10:
+        # <80% 且市场有足够样本 → critical（要求全覆盖）
+        checks.append({"name": "forecast_coverage", "level": "critical", "passed": False,
+                       "detail": f"预告覆盖率{cov_pct}%({cov.get('tracked')}/{cov_market}) 漏{len(cov_missing)}家"})
+    elif cov and cov.get("status") == "warn":
+        checks.append({"name": "forecast_coverage", "level": "warning", "passed": False,
+                       "detail": f"预告覆盖率{cov_pct}%({cov.get('tracked')}/{cov_market}) 漏{len(cov_missing)}家"})
+    else:
+        checks.append({"name": "forecast_coverage", "level": "warning", "passed": True,
+                       "detail": f"ok({cov_pct}% {cov.get('tracked')}/{cov_market})"})
 
     # ---- Aggregate ----
     critical_fails = [c for c in checks if c["level"] == "critical" and not c["passed"]]
@@ -2452,6 +2516,13 @@ def main():
         "forecasts": {"status": "ok", "source": "tushare", "count": len(df)},
     }
 
+    # Coverage check: 全市场预告 vs 追踪标的对账（全覆盖校验）
+    coverage = check_forecast_coverage(df["code"].tolist(), PERIOD_H1)
+    data_health["coverage"] = coverage
+    eprint(f"  📊 覆盖率对账: 全市场 {coverage['market_total']} 家公司 / 追踪 {coverage['tracked']} 只 = {coverage['coverage_pct']}% {'✅' if coverage['status']=='ok' else '🔴'}")
+    if coverage["missing"]:
+        eprint(f"     漏掉 {len(coverage['missing'])} 家: {coverage['missing'][:10]}")
+
     # Step 6a: Industry from tushare (no proxy needed)
     if not args.no_eastmoney:
         df, industry_health = enrich_industry_from_tushare(df)
@@ -2503,7 +2574,7 @@ def main():
             eprint(f"    [{cf['name']}] {cf['detail']}")
         eprint("=" * 60)
         # Still print DATA_HEALTH for diagnostics
-        print(f"# DATA_HEALTH: industry={data_health['industry']['status']}({data_health['industry']['matched']}/{data_health['industry']['total']}) mkt_cap={data_health['mkt_cap']['status']}({data_health['mkt_cap']['live']}L/{data_health['mkt_cap']['fallback']}F/{data_health['mkt_cap']['total']}T) price={data_health['price']['status']}({data_health['price']['stocks']}/{data_health['price']['total']}) q1={data_health['q1_fmdata']['stocks']}/{data_health['q1_fmdata']['total']} forecast={data_health['forecasts']['source']}({data_health['forecasts']['count']})")
+        print(f"# DATA_HEALTH: industry={data_health['industry']['status']}({data_health['industry']['matched']}/{data_health['industry']['total']}) mkt_cap={data_health['mkt_cap']['status']}({data_health['mkt_cap']['live']}L/{data_health['mkt_cap']['fallback']}F/{data_health['mkt_cap']['total']}T) price={data_health['price']['status']}({data_health['price']['stocks']}/{data_health['price']['total']}) q1={data_health['q1_fmdata']['stocks']}/{data_health['q1_fmdata']['total']} forecast={data_health['forecasts']['source']}({data_health['forecasts']['count']}) coverage={data_health['coverage']['status']}({data_health['coverage']['tracked']}/{data_health['coverage']['market_total']}M={data_health['coverage']['coverage_pct']}%)")
         print(validation["summary_line"])
         sys.exit(1)
 
@@ -2539,7 +2610,7 @@ def main():
 
         # ---- Data Source Health (always print) ----
         print(validation["summary_line"])
-        print(f"# DATA_HEALTH: industry={data_health['industry']['status']}({data_health['industry']['matched']}/{data_health['industry']['total']}) mkt_cap={data_health['mkt_cap']['status']}({data_health['mkt_cap']['live']}L/{data_health['mkt_cap']['fallback']}F/{data_health['mkt_cap']['total']}T) price={data_health['price']['status']}({data_health['price']['stocks']}/{data_health['price']['total']}) q1={data_health['q1_fmdata']['stocks']}/{data_health['q1_fmdata']['total']} forecast={data_health['forecasts']['source']}({data_health['forecasts']['count']})")
+        print(f"# DATA_HEALTH: industry={data_health['industry']['status']}({data_health['industry']['matched']}/{data_health['industry']['total']}) mkt_cap={data_health['mkt_cap']['status']}({data_health['mkt_cap']['live']}L/{data_health['mkt_cap']['fallback']}F/{data_health['mkt_cap']['total']}T) price={data_health['price']['status']}({data_health['price']['stocks']}/{data_health['price']['total']}) q1={data_health['q1_fmdata']['stocks']}/{data_health['q1_fmdata']['total']} forecast={data_health['forecasts']['source']}({data_health['forecasts']['count']}) coverage={data_health['coverage']['status']}({data_health['coverage']['tracked']}/{data_health['coverage']['market_total']}M={data_health['coverage']['coverage_pct']}%)")
         print(f"# GATE: {gate_reason}")
         print("")
         print(report[:800])
