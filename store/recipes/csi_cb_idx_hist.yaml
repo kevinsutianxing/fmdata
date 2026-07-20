@@ -1,0 +1,14 @@
+name: csi_cb_idx_hist
+category: market
+description: Official CSI Convertible Bond Index 000832 daily history from Eastmoney via akshare proxy pool
+file: market/csi_cb_idx_hist.csv
+source: akshare
+update_freq: daily
+fetch:
+  func: index_zh_a_hist
+  params:
+    symbol: "000832"
+    period: "daily"
+  date_col: 日期
+  incremental: false
+  proxy: qg
