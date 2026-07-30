@@ -1,0 +1,10 @@
+category: market
+description: "沪深300全部历史成分（PIT 超集 ~459 只）后复权因子，逐只 tushare adj_factor"
+update_freq: monthly
+fetch:
+  func: agent
+  command: "python3 /home/ubuntu/fmdata/store/scripts/fetch_adj_factor_csi300.py"
+  timeout: 1200
+file: market/adj_factor_csi300.csv
+name: adj_factor_csi300
+source: agent
