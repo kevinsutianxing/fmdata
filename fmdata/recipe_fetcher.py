@@ -40,6 +40,12 @@ AGENT_SCRIPT_ALLOWLIST = {
     "fetch_cjpy": "/home/ubuntu/fmdata/scripts/fetch_cjpy.py",
     # 半年报追踪 (快报+预告+Q2拆解+同比/环比)
     "fetch_semiannual_tracker": "/home/ubuntu/fmdata/scripts/fetch_semiannual_tracker.py",
+    "fetch_fund_nav": "/home/ubuntu/fmdata/store/scripts/fetch_fund_nav.py",
+    # 海外美股快照 (eastmoney push2his + QG 代理池)
+    "fetch_us_stock_spot": "/home/ubuntu/fmdata/store/scripts/fetch_us_stock_spot.py",
+    # CSI300 指数增强回测数据 (tushare, 半年分页 / 逐只 adj_factor)
+    "fetch_index_weight_000300": "/home/ubuntu/fmdata/store/scripts/fetch_index_weight_000300.py",
+    "fetch_adj_factor_csi300": "/home/ubuntu/fmdata/store/scripts/fetch_adj_factor_csi300.py",
 }
 
 # Remote host allowlist

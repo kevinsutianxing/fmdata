@@ -440,6 +440,11 @@ def fetch_dataset_endpoint(name: str, request: Request):
             return auth_err
     from fmdata.recipe_fetcher import fetch_dataset as do_fetch
     result = do_fetch(name)
+    # Business failure (allowlist rejection, upstream/proxy error, script crash) must NOT
+    # return 2xx — otherwise status-code-only monitors see "200 OK" while data goes stale
+    # for days (us_stock_spot silently failed 12 days this way, 2026-07-20→08-01).
+    if isinstance(result, dict) and result.get("status") == "error":
+        return JSONResponse(status_code=502, content=result)
     return result
 
 
