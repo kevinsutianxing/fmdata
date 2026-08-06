@@ -1,0 +1,13 @@
+name: mx_query
+category: market
+description: "东方财富「妙想」MCP NL 查询桥(官方认证 API;非确定性/ad-hoc/不可用于回测)。POST /fetch/mx_query 触发,响应展平为长表 CSV。默认查询可改 fetch.params.query/tool。ad-hoc 查询请 agent 直调 MCP 工具(Layer 1)。可用工具:mx_ashare_finance_data / mx_us_finance_data / mx_hk_finance_data / mx_index_block_finance_data / mx_fund_finance_data / mx_bond_finance_data / mx_macro_data / mx_stocks_screener / mx_finance_search_news / mx_finance_search_notice / mx_comprehensive_finance_data。"
+file: market/mx_query.csv
+source: eastmoney_mx
+_auto_fetch: false
+update_freq: ondemand
+fetch:
+  func: mx_ashare_finance_data
+  params:
+    tool: mx_ashare_finance_data
+    query: "贵州茅台(600519.SH)最新价与近5日收盘价"
+  timeout: 90

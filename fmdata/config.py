@@ -18,6 +18,8 @@ FACTORS_DIR = STORE_DIR / "factors"
 # API tokens
 TUSHARE_TOKEN = os.environ.get("TUSHARE_TOKEN", "")
 FRED_API_KEY = os.environ.get("FRED_API_KEY", "")
+# 东方财富「妙想」MCP Server 认证 key(官方认证 API,非裸连;走 mxapi.eastmoney.com/mxds/mcp)
+EM_API_KEY = os.environ.get("EM_API_KEY", "")
 
 # HTTP server
 HTTP_HOST = "127.0.0.1"

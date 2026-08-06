@@ -21,7 +21,7 @@ ADMIN_KEY = os.environ.get("FMDATA_ADMIN_KEY", "")
 # Recipe name validation: only alphanumeric, underscore, hyphen
 RECIPE_NAME_RE = re.compile(r"^[A-Za-z0-9_-]+$")
 
-SAFE_SOURCES = {"tushare", "akshare"}
+SAFE_SOURCES = {"tushare", "akshare", "eastmoney_mx"}
 DANGEROUS_SOURCES = {"agent", "remote"}
 
 

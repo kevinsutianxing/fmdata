@@ -1,4 +1,5 @@
 """Recipe-based on-demand data fetching with proxy support."""
+import json
 import logging
 import os
 import shlex
@@ -9,7 +10,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from fmdata.config import STORE_DIR
+from fmdata.config import STORE_DIR, EM_API_KEY
 
 logger = logging.getLogger("fmdata.recipe_fetcher")
 
@@ -50,6 +51,16 @@ AGENT_SCRIPT_ALLOWLIST = {
 
 # Remote host allowlist
 REMOTE_HOST_ALLOWLIST = {"hk43"}
+
+# 东方财富「妙想」MCP Server —— 官方认证 API(stateless, NL query, 2026-08-06)。
+# 非裸连:走 mxapi.eastmoney.com/mxds/mcp + em_api_key,不经 QG 代理池。
+MX_MCP_URL = "https://mxapi.eastmoney.com/mxds/mcp"
+MX_TOOLS = {
+    "mx_ashare_finance_data", "mx_us_finance_data", "mx_hk_finance_data",
+    "mx_index_block_finance_data", "mx_fund_finance_data", "mx_bond_finance_data",
+    "mx_macro_data", "mx_stocks_screener", "mx_finance_search_news",
+    "mx_finance_search_notice", "mx_comprehensive_finance_data",
+}
 
 
 # Dual QG proxy pool credentials (2026-07-01: 旧池快耗尽, kevinsu 池做 fallback via env)
@@ -153,6 +164,8 @@ class RecipeFetcher:
                 return self._fetch_agent(name, recipe, fetch_cfg)
             elif source == "remote":
                 return self._fetch_remote(name, recipe, fetch_cfg)
+            elif source == "eastmoney_mx":
+                return self._fetch_eastmoney_mx(name, recipe, fetch_cfg)
             else:
                 return {"status": "error", "message": f"unknown source: {source}"}
         except Exception as e:
@@ -236,6 +249,66 @@ class RecipeFetcher:
         df.to_csv(output_path, index=False)
         logger.info(f"saved {name}: {len(df)} rows to {output_path}")
 
+        return {"status": "ok", "rows": len(df), "file": str(output_path)}
+
+    def _fetch_eastmoney_mx(self, name: str, recipe: dict, fetch_cfg: dict) -> dict:
+        """东方财富「妙想」MCP NL 查询桥(官方认证 API,非裸连,无需 QG 代理)。
+
+        非确定性 / ad-hoc / 不可用于回测 —— 仅 on-demand 查询。把多 sheet 响应展平为
+        长表 CSV(sheet, row_label, col_header, value),无损。ad-hoc 查询走 Layer 1
+        (agent 直调 MCP 工具);本 recipe 仅作"经 fmdata 表面可达 + catalog 可发现"的 canned 桥。
+        """
+        import requests as _rq
+        params = fetch_cfg.get("params") or {}
+        tool = fetch_cfg.get("func") or params.get("tool", "mx_ashare_finance_data")
+        query = fetch_cfg.get("query") or params.get("query")
+        if not query:
+            return {"status": "error", "message": "eastmoney_mx recipe 需 fetch.query 或 fetch.params.query"}
+        if not EM_API_KEY:
+            return {"status": "error", "message": "EM_API_KEY 未配置(~/fmdata/.env)"}
+        if tool not in MX_TOOLS:
+            return {"status": "error", "message": f"未知妙想工具 {tool};可用:{sorted(MX_TOOLS)}"}
+        headers = {"Content-Type": "application/json",
+                   "Accept": "application/json, text/event-stream",
+                   "em_api_key": EM_API_KEY}
+        payload = {"jsonrpc": "2.0", "id": 1, "method": "tools/call",
+                   "params": {"name": tool, "arguments": {"query": query}}}
+        timeout = fetch_cfg.get("timeout", 90)
+        logger.info(f"mx_query {name}: tool={tool} query={query!r}")
+        resp = _rq.post(MX_MCP_URL, headers=headers, json=payload, timeout=timeout)
+        resp.raise_for_status()
+        rj = resp.json()
+        if rj.get("error"):
+            return {"status": "error", "message": f"MCP error: {rj['error']}"}
+        result = rj.get("result", {})
+        if result.get("isError"):
+            return {"status": "error", "message": f"MCP isError: {str(result.get('content'))[:200]}"}
+        rows = []
+        for item in result.get("content", []) or []:
+            if item.get("type") != "text":
+                continue
+            raw = item.get("text", "")
+            try:
+                parsed = json.loads(raw)
+            except Exception:
+                rows.append({"sheet": "(raw)", "row_label": "", "col_header": "text", "value": raw})
+                continue
+            for sheet in parsed.get("data", []) or []:
+                sheet_name = sheet.get("sheetName", "")
+                columns = sheet.get("columns", []) or []
+                for itemrow in sheet.get("items", []) or []:
+                    row_label = itemrow[0] if itemrow else ""
+                    for j, val in enumerate(itemrow[1:], start=1):
+                        col_header = columns[j] if j < len(columns) else f"col{j}"
+                        rows.append({"sheet": sheet_name, "row_label": row_label,
+                                     "col_header": str(col_header), "value": val})
+        df = pd.DataFrame(rows, columns=["sheet", "row_label", "col_header", "value"])
+        output_path = STORE_DIR / recipe.get("file", f"market/{name}.csv")
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = output_path.with_suffix(".csv.tmp")
+        df.to_csv(tmp, index=False)
+        tmp.rename(output_path)
+        logger.info(f"saved {name}: {len(df)} cells (long-format) to {output_path}")
         return {"status": "ok", "rows": len(df), "file": str(output_path)}
 
     def _fetch_agent(self, name: str, recipe: dict, fetch_cfg: dict) -> dict:
