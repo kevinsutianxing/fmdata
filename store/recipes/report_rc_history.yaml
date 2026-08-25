@@ -1,0 +1,8 @@
+name: report_rc_history
+category: fundamentals
+description: "卖方盈利预测历史明细（PIT，按研报日期，供分析师预期修正/广度因子研究）"
+file: fundamentals/report_rc_history.csv
+source: static
+_auto_fetch: false
+update_freq: daily
+notes: "Use store/scripts/fetch_report_rc_history.py. Historical consensus must be reconstructed with report_date <= as_of_date; do not backfill current consensus snapshots."
