@@ -54,14 +54,17 @@ jobs:
           python - <<'PY'
           import pandas as pd
           p = 'report_rc_history.csv'
-          df = pd.read_csv(p, dtype={'ts_code': str})
-          df['report_date'] = pd.to_datetime(df['report_date'], errors='coerce')
+          df = pd.read_csv(p, dtype={'ts_code': str, 'report_date': str}, low_memory=False)
+          raw_dates = df['report_date'].astype(str).str.replace(r'\.0$', '', regex=True).str.zfill(8)
+          df['report_date'] = pd.to_datetime(raw_dates, format='%Y%m%d', errors='coerce')
           required = {'ts_code', 'report_date', 'quarter', 'org_name', 'eps'}
           missing = required.difference(df.columns)
           if missing:
               raise SystemExit(f'missing required fields: {sorted(missing)}')
           if df.empty:
               raise SystemExit('empty report_rc history')
+          if df['report_date'].isna().any():
+              raise SystemExit(f'invalid report_date rows: {int(df["report_date"].isna().sum())}')
           if df['report_date'].min() > pd.Timestamp('2022-06-30'):
               raise SystemExit(f'history starts too late: {df["report_date"].min()}')
           if df['report_date'].max() < pd.Timestamp('2026-01-01'):
@@ -74,10 +77,26 @@ jobs:
               'brokers': int(df['org_name'].nunique()),
           })
           PY
-      - name: Upload PIT analyst history
+      - name: Build compact strategy input
+        run: |
+          python - <<'PY'
+          import pandas as pd
+          p = 'report_rc_history.csv'
+          df = pd.read_csv(
+              p,
+              usecols=['ts_code', 'report_date', 'quarter', 'org_name', 'eps'],
+              dtype={'ts_code': str, 'report_date': str},
+              low_memory=False,
+          )
+          df = df.dropna(subset=['ts_code', 'report_date', 'quarter', 'org_name', 'eps'])
+          df = df.drop_duplicates(['ts_code', 'report_date', 'quarter', 'org_name', 'eps'])
+          df.to_csv('report_rc_history_strategy.csv.gz', index=False, compression='gzip')
+          print({'strategy_rows': len(df)})
+          PY
+      - name: Upload compact PIT analyst history
         uses: actions/upload-artifact@v4
         with:
-          name: report-rc-history-2022-latest
-          path: report_rc_history.csv
-          retention-days: 30
+          name: report-rc-history-strategy-2022-latest
+          path: report_rc_history_strategy.csv.gz
+          retention-days: 1
           if-no-files-found: error
