@@ -1,0 +1,83 @@
+name: Backfill report_rc PIT history
+
+on:
+  workflow_dispatch:
+    inputs:
+      start:
+        description: First report date (YYYYMMDD)
+        required: false
+        default: "20220101"
+      end:
+        description: Last report date (YYYYMMDD)
+        required: false
+        default: "20260828"
+  push:
+    branches:
+      - research/analyst-revisions-pit
+    paths:
+      - ".github/workflows/report-rc-history-backfill.yml"
+
+permissions:
+  contents: read
+
+env:
+  TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
+
+jobs:
+  backfill-report-rc:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install data dependencies
+        run: python -m pip install -q --disable-pip-version-check pandas tushare
+      - name: Verify Tushare credential
+        run: |
+          if [ -z "$TUSHARE_TOKEN" ]; then
+            echo "TUSHARE_TOKEN repository secret is required" >&2
+            exit 2
+          fi
+      - name: Backfill point-in-time analyst report history
+        env:
+          START_DATE: ${{ github.event.inputs.start || '20220101' }}
+          END_DATE: ${{ github.event.inputs.end || '20260828' }}
+        run: |
+          python store/scripts/fetch_report_rc_history.py \
+            --start "$START_DATE" \
+            --end "$END_DATE" \
+            --window-days 60 \
+            --pause 0.12 \
+            --output report_rc_history.csv
+          python - <<'PY'
+          import pandas as pd
+          p = 'report_rc_history.csv'
+          df = pd.read_csv(p, dtype={'ts_code': str})
+          df['report_date'] = pd.to_datetime(df['report_date'], errors='coerce')
+          required = {'ts_code', 'report_date', 'quarter', 'org_name', 'eps'}
+          missing = required.difference(df.columns)
+          if missing:
+              raise SystemExit(f'missing required fields: {sorted(missing)}')
+          if df.empty:
+              raise SystemExit('empty report_rc history')
+          if df['report_date'].min() > pd.Timestamp('2022-06-30'):
+              raise SystemExit(f'history starts too late: {df["report_date"].min()}')
+          if df['report_date'].max() < pd.Timestamp('2026-01-01'):
+              raise SystemExit(f'history is stale: {df["report_date"].max()}')
+          print({
+              'rows': len(df),
+              'first_report_date': str(df['report_date'].min().date()),
+              'last_report_date': str(df['report_date'].max().date()),
+              'stocks': int(df['ts_code'].nunique()),
+              'brokers': int(df['org_name'].nunique()),
+          })
+          PY
+      - name: Upload PIT analyst history
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-rc-history-2022-latest
+          path: report_rc_history.csv
+          retention-days: 30
+          if-no-files-found: error
