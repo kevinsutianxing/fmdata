@@ -1,0 +1,28 @@
+name: report_rc_history
+category: fundamentals
+description: "卖方盈利预测历史明细（PIT，按研报日期，供分析师预期修正/广度/网络扩散因子研究）"
+file: fundamentals/report_rc_history.csv
+source: tushare
+_auto_fetch: false
+update_freq: daily
+notes: "Use store/scripts/fetch_report_rc_history.py. Historical consensus must be reconstructed with report_date <= as_of_date; do not backfill current consensus snapshots."
+fetch:
+  func: report_rc
+  date_col: report_date
+  published_at_col: report_date
+  available_at_col: report_date
+semantics:
+  source: tushare
+  source_func: report_rc
+  date_col: report_date
+  published_at_col: report_date
+  available_at_col: report_date
+  frequency: event_driven_sell_side_report
+  timezone: Asia/Shanghai
+  revision_policy: "append report-level observations by report_date; historical rows are never replaced by a current-consensus snapshot"
+  available_at_rule: "a row may enter a daily/monthly research snapshot only when report_date <= research as_of date; no later report may be backfilled into an earlier as_of"
+  accounting_scope: "sell-side analyst forecasts, not issuer-reported accounting statements"
+  period_basis: "forecast fiscal period encoded by quarter; annual Core V3 EPS revision uses the frozen Q4/target-fiscal-year constant-horizon construction"
+  license_or_usage_note: "source data obtained under the user's Tushare Pro entitlement; snapshots are for the user's internal research workflow and must follow provider terms"
+  unit: mixed_report_fields
+  scale: native_provider_units

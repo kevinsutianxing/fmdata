@@ -1,0 +1,26 @@
+name: core_v3_fundamental_change_monthly
+category: factors
+description: "Frozen Core V3 P1 fundamental-change candidates: gross_margin_qoq, np_ttm_qoq, eaa on month-end trade dates"
+file: factors/core_v3_fundamental_change_monthly.csv
+source: tushare
+_auto_fetch: false
+update_freq: monthly
+notes: "Refresh only with store/scripts/fetch_core_v3_fundamental_change_history.py. This dataset is a research candidate cache, not an admitted production alpha source."
+fetch:
+  func: factor_value
+  date_col: trade_date
+  available_at_col: trade_date
+semantics:
+  source: tushare
+  source_func: factor_value
+  date_col: trade_date
+  available_at_col: trade_date
+  frequency: monthly_last_open_trade_day
+  timezone: Asia/Shanghai
+  revision_policy: "historical factor values are keyed by provider trade_date; no later observation is substituted for a missing historical date"
+  available_at_rule: "a factor row is usable only on or after its exact provider trade_date; the cache preserves the returned trade_date exactly"
+  adjustment: not_applicable_derived_factor
+  currency: not_applicable_or_provider_native_factor
+  license_or_usage_note: "source data obtained under the user's Tushare Pro entitlement; snapshots are for the user's internal research workflow and must follow provider terms"
+  unit: provider_factor_value
+  scale: provider_native

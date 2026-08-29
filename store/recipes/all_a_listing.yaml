@@ -1,0 +1,20 @@
+name: all_a_listing
+category: reference
+description: "A股证券上市/退市有效区间，用于历史PIT股票可投资集合判定"
+file: reference/all_a_listing.csv
+source: tushare
+_auto_fetch: false
+update_freq: daily
+notes: "Refresh with store/scripts/fetch_all_a_listing_history.py. Historical eligibility uses list_date <= as_of < delist_date; current list_status is not treated as a historical state."
+fetch:
+  func: stock_basic
+semantics:
+  source: tushare
+  source_func: stock_basic
+  frequency: reference_daily_refresh
+  timezone: Asia/Shanghai
+  revision_policy: "effective list/delist intervals may be refreshed when provider reference metadata changes; historical eligibility uses interval dates, not current list_status"
+  available_at_rule: "list_date is effective from the listing date; delist_date only ends eligibility on/after the effective delisting date and does not exclude the stock before that date"
+  license_or_usage_note: "source data obtained under the user's Tushare Pro entitlement; snapshots are for the user's internal research workflow and must follow provider terms"
+  unit: security_reference
+  scale: native_provider_values
