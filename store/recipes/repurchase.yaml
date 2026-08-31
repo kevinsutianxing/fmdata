@@ -1,6 +1,6 @@
 name: repurchase
 category: fundamentals
-description: "全市场回购数据(东方财富) - 实施进度/涉及金额/进展说明"
+description: "全市场回购数据(tushare) - 实施进度/已回购数量金额/价格区间, 2016至今"
 file: fundamentals/repurchase.csv
 source: agent
 update_freq: weekly
