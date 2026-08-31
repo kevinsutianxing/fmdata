@@ -46,7 +46,27 @@ AGENT_SCRIPT_ALLOWLIST = {
     "fetch_us_stock_spot": "/home/ubuntu/fmdata/store/scripts/fetch_us_stock_spot.py",
     # CSI300 指数增强回测数据 (tushare, 半年分页 / 逐只 adj_factor)
     "fetch_index_weight_000300": "/home/ubuntu/fmdata/store/scripts/fetch_index_weight_000300.py",
+    "fetch_index_weight_hs300_zz500": "/home/ubuntu/fmdata/store/scripts/fetch_index_weight_hs300_zz500.py",
     "fetch_adj_factor_csi300": "/home/ubuntu/fmdata/store/scripts/fetch_adj_factor_csi300.py",
+    # 分析师一致预期因子表 (本地 analyst_consensus/panel/snapshots + daily-matrix)
+    "build_consensus_factors": "/home/ubuntu/fmdata/store/scripts/build_consensus_factors.py",
+    # 中证800 (000906) 指数权重 (tushare index_weight, 半年分页, 镜像 000300)
+    "fetch_index_weight_000906": "/home/ubuntu/fmdata/store/scripts/fetch_index_weight_000906.py",
+    "fetch_cb_cashflows_pit": "/home/ubuntu/fmdata/scripts/fetch_cb_cashflows_pit.py",
+    "fetch_cb_stock_fundamentals_pit": "/home/ubuntu/fmdata/scripts/fetch_cb_stock_fundamentals_pit.py",
+    "fetch_cb_stock_daily": "/home/ubuntu/fmdata/scripts/fetch_cb_stock_daily.py",
+    # 披露/融资融券/互动易/业绩 (akshare-em 系, 2026-08-17 补登记)
+    "fetch_disclosure": "/home/ubuntu/fmdata/store/scripts/fetch_disclosure.py",
+    "fetch_income_full": "/home/ubuntu/fmdata/store/scripts/fetch_income_full.py",
+    "fetch_irm_qa": "/home/ubuntu/fmdata/store/scripts/fetch_irm_qa.py",
+    "fetch_margin_detail": "/home/ubuntu/fmdata/store/scripts/fetch_margin_detail.py",
+    "fetch_semiannual_investment": "/home/ubuntu/fmdata/scripts/fetch_semiannual_investment_system.py",
+    # 回购/研报/限售解禁/基金基础 (akshare-em 系, 2026-08-31 补登记——连续两晚治理 502 真因)
+    "fetch_repurchase": "/home/ubuntu/fmdata/store/scripts/fetch_repurchase.py",
+    "fetch_research_reports": "/home/ubuntu/fmdata/store/scripts/fetch_research_reports.py",
+    "fetch_restricted_release": "/home/ubuntu/fmdata/store/scripts/fetch_restricted_release.py",
+    "fetch_fund_5y_returns_full": "/home/ubuntu/fmdata/store/scripts/fetch_fund_5y_returns_full.py",
+    "fetch_fund_basic_open": "/home/ubuntu/fmdata/store/scripts/fetch_fund_basic_open.py",
 }
 
 # Remote host allowlist
@@ -200,9 +220,23 @@ class RecipeFetcher:
                 if start_key not in params:
                     params[start_key] = (last_date + pd.Timedelta(days=1)).strftime("%Y%m%d")
 
-        # Step 2: Fetch new data
+        # Step 2: Fetch new data — 池内单IP对东财成功率随时间簇集波动(0-50%),
+        # 抽到坏IP单发即挂; 镜像 eastmoney_get 的轮换策略: 每次重试换一个出口IP
         logger.info(f"fetching {name} via akshare.{func_name}({params})")
-        df = func(**params)
+        attempts = fetch_cfg.get("attempts", 3)
+        df, last_err = None, None
+        for attempt in range(1, attempts + 1):
+            try:
+                df = func(**params)
+                last_err = None
+                break
+            except Exception as e:
+                last_err = e
+                logger.warning(f"{name} akshare attempt {attempt}/{attempts} failed: {e}")
+                if attempt < attempts:
+                    _set_requests_proxy(_get_qg_proxy() or "")
+        if last_err is not None:
+            return {"status": "error", "message": f"{func_name}: {last_err}"}
 
         if df is None or df.empty:
             return {"status": "empty", "message": f"{func_name} returned no data"}
@@ -211,6 +245,10 @@ class RecipeFetcher:
         if existing_df is not None and not existing_df.empty and date_col and date_col in df.columns:
             df = pd.concat([existing_df, df], ignore_index=True)
             if date_col in df.columns:
+                # akshare 1.18.91+ 部分接口返回 datetime.date, 旧CSV是str — 混型会让
+                # drop_duplicates 失效(同日双行被保留)+ sort_values 直接崩; 统一转回 str
+                if df[date_col].map(type).nunique() > 1:
+                    df[date_col] = pd.to_datetime(df[date_col]).dt.strftime("%Y-%m-%d")
                 df = df.drop_duplicates(subset=[date_col], keep="last")
                 df = df.sort_values(date_col).reset_index(drop=True)
 
