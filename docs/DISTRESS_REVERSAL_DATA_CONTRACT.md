@@ -26,3 +26,7 @@ This repository is the reusable data layer for `kevinsutianxing/distress-reversa
 5. `analyst_report_raw` is broker-level data. Aggregate consensus cannot silently replace it.
 
 The compact status snapshot at 2026-09-15 is mirrored under `docs/distress_reversal_snapshot_20260915.json` in this branch. The strategy repository's `data/manifest.json` is the consumer-facing logical registry.
+
+## 2026-09-17 validation note
+
+This documentation-only branch passed Markdown contract assertions and `python -m json.tool`. The repository's existing pytest suite could not be collected in this HK43 checkout because its `tushare` runtime dependency is intentionally absent; no executable fmdata code was changed.
