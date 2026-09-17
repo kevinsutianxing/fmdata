@@ -1,0 +1,20 @@
+{
+  "snapshot_date": "2026-09-15",
+  "verified_at": "2026-09-16",
+  "source": "a-share-index-enhancement data/c2c-refresh-20260916 commit 2174c336646f7a51641d9b1179d7a782a76dc10c",
+  "daily_price": {"status": "PARTIAL", "max_date": "2026-09-15"},
+  "daily_basic": {"status": "PARTIAL", "market_cap_max_date": "2026-08-21"},
+  "stock_status": {"status": "PARTIAL", "market_observation_max_date": "2026-08-21"},
+  "index_membership_weights": {
+    "status": "PARTIAL",
+    "CSI300": "2015-01-30 through 2026-07-31 local",
+    "CSI500": "2015-01-30 through 2026-07-31 local",
+    "CSI1000": "remote snapshot through 2026-08-31"
+  },
+  "sw_industry_pit": {"status": "PARTIAL", "SW1": "2015-01-01 through 2026-08-14", "SW2": "UNAVAILABLE"},
+  "fundamentals_pit": {"status": "PARTIAL", "ann_date_max": "2026-08-24", "report_period_max": "2026-06-30"},
+  "analyst_report_raw": {"status": "UNAVAILABLE"},
+  "corporate_actions": {"status": "UNAVAILABLE"},
+  "wind_index_daily": {"status": "PARTIAL", "codes": ["885001.WI", "881001.WI"]},
+  "macro_pit": {"status": "PARTIAL", "release_vintage_verified": false}
+}
