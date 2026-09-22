@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from fmdata.config import STORE_DIR, EM_API_KEY
+from fmdata.config import STORE_DIR, EM_API_KEY, SW_MCP_URL, SW_MCP_CODE
 
 logger = logging.getLogger("fmdata.recipe_fetcher")
 
@@ -50,8 +50,15 @@ AGENT_SCRIPT_ALLOWLIST = {
     "fetch_adj_factor_csi300": "/home/ubuntu/fmdata/store/scripts/fetch_adj_factor_csi300.py",
     # 分析师一致预期因子表 (本地 analyst_consensus/panel/snapshots + daily-matrix)
     "build_consensus_factors": "/home/ubuntu/fmdata/store/scripts/build_consensus_factors.py",
+    # 统一因子库 (2026-09-14): 四源目录 + 单入口查询门面
+    "build_factor_catalog": "/home/ubuntu/fmdata/store/scripts/build_factor_catalog.py",
+    "factor_query": "/home/ubuntu/fmdata/store/scripts/factor_query.py",
     # 中证800 (000906) 指数权重 (tushare index_weight, 半年分页, 镜像 000300)
     "fetch_index_weight_000906": "/home/ubuntu/fmdata/store/scripts/fetch_index_weight_000906.py",
+    # CSI1000/500 historical index weights
+    "fetch_index_weight_000852_full": "/home/ubuntu/fmdata/store/scripts/fetch_index_weight_000852.py",
+    "fetch_index_weight_000905_full": "/home/ubuntu/fmdata/store/scripts/fetch_index_weight_000905.py",
+    "ingest_wind_index_daily": "/home/ubuntu/fmdata/store/scripts/ingest_wind_index_daily.py",
     "fetch_cb_cashflows_pit": "/home/ubuntu/fmdata/scripts/fetch_cb_cashflows_pit.py",
     "fetch_cb_stock_fundamentals_pit": "/home/ubuntu/fmdata/scripts/fetch_cb_stock_fundamentals_pit.py",
     "fetch_cb_stock_daily": "/home/ubuntu/fmdata/scripts/fetch_cb_stock_daily.py",
@@ -157,6 +164,88 @@ def eastmoney_get(url, params, max_tries=8, timeout=12, backoff=0.15):
     return None
 
 
+# ---- 申万宏源金工 MCP ----
+# 16 因子官方目录(月末快照;10风格+4筹码+行业轮动+GBM量价)
+SW_FACTOR_KEYS = ["估值", "低波", "低流动性", "分析师", "动量", "反转", "市值", "成长",
+                  "盈利", "红利", "筹码成本差", "筹码成本", "机构筹码集中度", "筹码合成",
+                  "行业轮动", "GBM量价"]
+# 服务端单响应硬上限 120 行(实测 600 只请求只回 120,metadata.truncated 不可信),
+# 所有调用方必须自行分块:截面 ≤100 只/次,时序 ≤110 月/次
+SW_ROW_CAP = 120
+
+
+class _SwMcpClient:
+    """申万宏源金工 MCP 客户端(Streamable HTTP,session 制)。
+
+    与妙想桥不同:本服务强制 mcp-session-id,须先 initialize 握手;
+    session 失效(400)时自动重置重试一次。响应可能是 JSON 或 SSE。
+    """
+
+    def __init__(self, url: str, code: str):
+        self.url, self.code = url.rstrip("/"), code
+        self._session = None
+
+    def _post(self, payload: dict, timeout: int) -> dict:
+        import requests as _rq
+        headers = {"Authorization": f"Bearer {self.code}",
+                   "Content-Type": "application/json",
+                   "Accept": "application/json, text/event-stream"}
+        if self._session:
+            headers["mcp-session-id"] = self._session
+        resp = _rq.post(self.url, headers=headers, json=payload, timeout=timeout)
+        resp.raise_for_status()
+        sid = resp.headers.get("mcp-session-id")
+        if sid:
+            self._session = sid
+        # 两个坑:①SSE 无 charset,resp.text 会按 ISO-8859-1 解码 → 中文 mojibake,
+        # 必须显式 UTF-8;②mojibake 里的 \x85(NEL) 会被 splitlines() 当换行把
+        # data 行拦腰斩断 → 只能按真实 \n 切再剥 \r
+        body = resp.content.decode("utf-8", errors="replace")
+        if "text/event-stream" in resp.headers.get("content-type", ""):
+            for line in body.split("\n"):
+                line = line.rstrip("\r")
+                if line.startswith("data:"):
+                    try:
+                        return json.loads(line[5:].strip())
+                    except Exception:
+                        continue
+            return {}
+        return json.loads(body) if body.strip() else {}
+
+    def _ensure_session(self, timeout: int) -> None:
+        if self._session:
+            return
+        self._post({"jsonrpc": "2.0", "id": 0, "method": "initialize", "params": {
+            "protocolVersion": "2025-03-26", "capabilities": {},
+            "clientInfo": {"name": "fmdata-sw-mcp", "version": "0.1"}}}, timeout)
+        self._post({"jsonrpc": "2.0", "method": "notifications/initialized"}, timeout)
+
+    def call(self, tool: str, args: dict, timeout: int = 60) -> dict:
+        """tools/call 并解析 content[0].text 为 JSON(服务端 text 里是 JSON,含裸 NaN)。"""
+        self._ensure_session(timeout)
+        payload = {"jsonrpc": "2.0", "id": 1, "method": "tools/call",
+                   "params": {"name": tool, "arguments": args}}
+        try:
+            rj = self._post(payload, timeout)
+        except Exception:
+            # session 过期是唯一可自愈失败模式:重置握手重试一次
+            self._session = None
+            self._ensure_session(timeout)
+            rj = self._post(payload, timeout)
+        if rj.get("error"):
+            raise RuntimeError(f"SW MCP error: {rj['error']}")
+        result = rj.get("result", {})
+        if result.get("isError"):
+            raise RuntimeError(f"SW MCP isError: {str(result.get('content'))[:200]}")
+        for item in result.get("content", []) or []:
+            if item.get("type") == "text":
+                try:
+                    return json.loads(item["text"])
+                except Exception:
+                    return {"raw": item["text"]}
+        return {}
+
+
 class RecipeFetcher:
     """Execute recipes to fetch or update datasets on-demand."""
 
@@ -186,6 +275,8 @@ class RecipeFetcher:
                 return self._fetch_remote(name, recipe, fetch_cfg)
             elif source == "eastmoney_mx":
                 return self._fetch_eastmoney_mx(name, recipe, fetch_cfg)
+            elif source == "sw_mcp":
+                return self._fetch_sw_mcp(name, recipe, fetch_cfg)
             else:
                 return {"status": "error", "message": f"unknown source: {source}"}
         except Exception as e:
@@ -348,6 +439,82 @@ class RecipeFetcher:
         tmp.rename(output_path)
         logger.info(f"saved {name}: {len(df)} cells (long-format) to {output_path}")
         return {"status": "ok", "rows": len(df), "file": str(output_path)}
+
+    def _fetch_sw_mcp(self, name: str, recipe: dict, fetch_cfg: dict) -> dict:
+        """申万宏源金工 MCP 桥(结构化参数,session 制,非 NL → 可确定性复现)。
+
+        fetch.func = factor_value(月度截面,默认全 universe) | factor_series(个股时序)。
+        120 行/响应上限由本方法内部分块;增量为 (date, ts_code) 去重合并。
+        PIT 注意:月末快照结构,历史月值回测资格待"隔月重拉 diff"验证(见 RUNBOOK)。
+        """
+        if not SW_MCP_URL or not SW_MCP_CODE:
+            return {"status": "error", "message": "SW_MCP_URL/SW_MCP_CODE 未配置(~/fmdata/.env)"}
+        func = fetch_cfg.get("func", "factor_value")
+        params = dict(fetch_cfg.get("params", {}))
+        timeout = fetch_cfg.get("timeout", 90)
+        output_path = STORE_DIR / recipe.get("file", "factors/sw_factor_value.csv")
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        cli = _SwMcpClient(SW_MCP_URL, SW_MCP_CODE)
+        rows: list = []
+
+        if func == "factor_value":
+            factors = params.get("factors") or SW_FACTOR_KEYS
+            date = params.get("date") or datetime.now().strftime("%Y-%m-%d")
+            ts_codes = params.get("ts_codes")
+            if not ts_codes:
+                uni_path = STORE_DIR / "factors/sw_universe.csv"
+                if uni_path.exists():
+                    ts_codes = pd.read_csv(uni_path)["ts_code"].tolist()
+                else:
+                    return {"status": "error",
+                            "message": "factor_value 需 fetch.params.ts_codes 或先建 factors/sw_universe.csv(见 scripts/backfill_sw_factors.py)"}
+            actual = set()
+            for i in range(0, len(ts_codes), 100):
+                chunk = ts_codes[i:i + 100]
+                d = cli.call("get_factor_value",
+                             {"factors": factors, "ts_codes": chunk, "date": date}, timeout)
+                rows.extend(d.get("records", []))
+                m = (d.get("metadata") or {}).get("actual_month_end")
+                if m:
+                    actual.add(m)
+                time.sleep(0.15)  # 礼貌限速(个人邀请码授权,无文档化配额)
+        elif func == "factor_series":
+            factors = params.get("factors") or SW_FACTOR_KEYS
+            ts_codes = params.get("ts_codes") or []
+            start = params.get("start")
+            end = params.get("end")
+            if not (ts_codes and start and end):
+                return {"status": "error", "message": "factor_series 需 params.ts_codes/start/end"}
+            # 窗口按 ≤110 个月分块(上限 120 行/响应)
+            window = pd.period_range(start, end, freq="M")
+            for code in ts_codes:
+                for w0 in range(0, len(window), 110):
+                    w = window[w0:w0 + 110]
+                    d = cli.call("get_factor_series",
+                                 {"factors": factors, "ts_codes": [code],
+                                  "start": str(w[0].start_time.date()),
+                                  "end": str(w[-1].end_time.date())}, timeout)
+                    rows.extend(d.get("records", []))
+                    time.sleep(0.15)
+        else:
+            return {"status": "error", "message": f"未知 sw_mcp func: {func}(factor_value|factor_series)"}
+
+        if not rows:
+            return {"status": "empty", "message": "SW MCP 返回 0 行(月度因子更新滞后 ~T+7,换上月末日期重试)"}
+        df = pd.DataFrame(rows)
+        # 增量合并:(date, ts_code) 去重保留最新
+        if output_path.exists():
+            old = pd.read_csv(output_path)
+            if not old.empty:
+                df = pd.concat([old, df], ignore_index=True)
+        df = df.drop_duplicates(subset=["date", "ts_code"], keep="last")
+        df = df.sort_values(["date", "ts_code"]).reset_index(drop=True)
+        tmp = output_path.with_suffix(".csv.tmp")
+        df.to_csv(tmp, index=False)
+        tmp.rename(output_path)
+        extra = {"actual_month_end": sorted(actual)} if func == "factor_value" else {}
+        logger.info(f"saved {name}: {len(df)} rows (wide) to {output_path}")
+        return {"status": "ok", "rows": len(df), "file": str(output_path), **extra}
 
     def _fetch_agent(self, name: str, recipe: dict, fetch_cfg: dict) -> dict:
         """Execute an agent recipe using the script allowlist (no shell=True)."""

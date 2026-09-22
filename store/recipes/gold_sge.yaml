@@ -2,6 +2,7 @@ category: market
 description: SGE黄金基准价(Au99.99晚盘价), 日频, 2016至今
 update_freq: daily
 fetch:
+  incremental: false
   date_col: 交易时间
   func: spot_golden_benchmark_sge
   params: {}

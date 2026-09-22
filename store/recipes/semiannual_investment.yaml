@@ -7,4 +7,4 @@ update_freq: daily
 fetch:
   func: agent
   command: "python3 /home/ubuntu/fmdata/scripts/fetch_semiannual_investment_system.py"
-  timeout: 300
+  timeout: 900

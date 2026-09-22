@@ -21,7 +21,7 @@ ADMIN_KEY = os.environ.get("FMDATA_ADMIN_KEY", "")
 # Recipe name validation: only alphanumeric, underscore, hyphen
 RECIPE_NAME_RE = re.compile(r"^[A-Za-z0-9_-]+$")
 
-SAFE_SOURCES = {"tushare", "akshare", "eastmoney_mx"}
+SAFE_SOURCES = {"tushare", "akshare", "eastmoney_mx", "sw_mcp"}
 DANGEROUS_SOURCES = {"agent", "remote"}
 
 
@@ -54,13 +54,35 @@ def _sanitize(obj):
     return obj
 
 
-def _df_to_json(df, order_col=None, order="asc", extra_meta=None):
-    """Convert DataFrame to JSON-serializable dict with optional sorting and metadata."""
+def _df_to_json(df, order_col=None, order="asc", extra_meta=None, allow_oversize=False):
+    """Convert DataFrame to JSON-serializable dict with optional sorting and metadata.
+
+    2026-09-17 big-table guard: to_dict(orient="records") on a multi-million-row frame
+    balloons RSS 5-10x (537MB daily_basic.csv -> ~3GB peak) and OOM-freezes the 3.6G host
+    (4 global OOM kills Sep 16-17). Serializing >_MAX_JSON_ROWS without allow_oversize
+    now returns 413 with remedies instead of nuking the box.
+    """
+    _MAX_JSON_ROWS = 200_000
+    _MAX_JSON_CELLS = 10_000_000  # wide pivots (e.g. daily_matrix) slip past a row-only check
     if df is None or df.empty:
         result = {"rows": 0, "data": []}
         if extra_meta:
             result.update(extra_meta)
         return result
+
+    if not allow_oversize and (len(df) > _MAX_JSON_ROWS or df.size > _MAX_JSON_CELLS):
+        return JSONResponse(status_code=413, content={
+            "error": "result_too_large",
+            "rows": int(len(df)),
+            "cols": int(df.shape[1]),
+            "max_rows": _MAX_JSON_ROWS,
+            "max_cells": _MAX_JSON_CELLS,
+            "message": (
+                f"result has {len(df)} rows; serializing it in-process would exhaust host memory. "
+                "Use ?limit=N (head rows), a filtered/parameterized endpoint, or read the CSV/"
+                "parquet directly from ~/fmdata/store/ (file path in /catalog)."
+            ),
+        })
 
     # Sort if requested
     if order_col and order_col in df.columns:
@@ -359,10 +381,20 @@ def health_data(category: Optional[str] = Query(None, description="Filter by cat
 
 
 @app.get("/data/{name}")
-def get_dataset_data(name: str):
-    """Get data for any dataset by name. Works for all categories."""
+def get_dataset_data(
+    name: str,
+    limit: Optional[int] = Query(None, description="只读前 N 行（大表必须，避免整机 OOM）"),
+    full: bool = Query(False, description="显式确认拉全量大表（>64MB 文件须显式声明）"),
+):
+    """Get data for any dataset by name. Works for all categories.
+
+    2026-09-17: big files (>64MB) require ?limit=N or ?full=true. Whole-table dumps of
+    e.g. daily_basic (537MB) were the root cause of the Sep 16-17 host OOM freezes.
+    """
     import pandas as pd
     from fmdata.config import STORE_DIR
+
+    _BIG_FILE_BYTES = 64 * 1024 * 1024
 
     datasets = list_datasets()
     ds = datasets.get(name)
@@ -387,8 +419,16 @@ def get_dataset_data(name: str):
         return JSONResponse(status_code=404, content={"error": f"data file for '{name}' not found on disk"})
 
     try:
-        df = pd.read_csv(file_path)
-        return _df_to_json(df)
+        if file_path.stat().st_size > _BIG_FILE_BYTES and not full and not limit:
+            return JSONResponse(status_code=413, content={
+                "error": "file_too_large",
+                "file": str(file_path),
+                "size_mb": round(file_path.stat().st_size / 1048576, 1),
+                "message": "file >64MB; add ?limit=N for head rows or ?full=true to dump all "
+                           "(may OOM the 3.6G host — prefer reading the CSV directly)",
+            })
+        df = pd.read_csv(file_path, nrows=limit) if limit else pd.read_csv(file_path)
+        return _df_to_json(df, allow_oversize=full)
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": f"failed to read {name}: {str(e)}"})
 

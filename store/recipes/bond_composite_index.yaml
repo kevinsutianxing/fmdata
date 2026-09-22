@@ -2,6 +2,7 @@ category: market
 description: 中债综合指数(净价/全价/财富), 日频
 update_freq: daily
 fetch:
+  incremental: false
   date_col: date
   func: bond_composite_index_cbond
   params:

@@ -2,6 +2,7 @@ category: market
 description: 上证国债指数(000012), 日频, 2007至今, 4600+行
 update_freq: daily
 fetch:
+  incremental: false
   date_col: date
   func: bond_treasury_index_cbond
   params: {}

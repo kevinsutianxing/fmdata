@@ -36,6 +36,37 @@ OUT_CSV = Path.home() / "fmdata/store/fundamentals/semiannual_investment.csv"
 OUT_REPORT = Path.home() / "fmdata/store/fundamentals/semiannual_investment_report.md"
 BT_OUT = Path.home() / "fmdata/store/fundamentals/semiannual_backtest.json"
 CJPY_BATCH = 500
+
+# ---- Income statement cache (avoid daily cjpy/Tinysoft full fetch) ----
+import pickle, os as _os
+INCOME_CACHE_FILE = _os.path.expanduser("~/.loop/semiannual-daily/.income_cache.pkl")
+INCOME_MODE = _os.environ.get("INCOME_MODE", "refresh")  # refresh | cache
+
+def _save_income_cache(fin_data, hist_q, ts=None):
+    """Save cjpy income data to disk cache. ts=全量刷新时钟; 增量补爬存盘时透传旧 ts
+    (否则 mtime 永远年轻, 年龄门永不触发全量刷新 → 披露季实际值静默 stale)。"""
+    try:
+        _os.makedirs(_os.path.dirname(INCOME_CACHE_FILE), exist_ok=True)
+        with open(INCOME_CACHE_FILE, "wb") as f:
+            pickle.dump({"fin_data": fin_data, "hist_q": hist_q,
+                         "ts": ts if ts is not None else _time.time()}, f)
+        eprint(f"  Income cache saved: {len(fin_data)} stocks -> {INCOME_CACHE_FILE}")
+    except Exception as e:
+        eprint(f"  WARNING: failed to save income cache: {e}")
+
+def _load_income_cache():
+    """Load cached cjpy income data. Returns (fin_data, hist_q, ts) or (None, None, 0)."""
+    try:
+        if not _os.path.exists(INCOME_CACHE_FILE):
+            return None, None, 0.0
+        with open(INCOME_CACHE_FILE, "rb") as f:
+            d = pickle.load(f)
+        eprint(f"  Income cache loaded: {len(d.get('fin_data', {}))} stocks (from {INCOME_CACHE_FILE})")
+        return d.get("fin_data", {}), d.get("hist_q", {}), float(d.get("ts", 0.0))
+    except Exception as e:
+        eprint(f"  WARNING: failed to load income cache: {e}, will refresh")
+        return None, None, 0.0
+
 EASTMONEY_DELAY = 0.15
 
 # ---- Static Reference Data (fallback when Eastmoney proxy pool fails) ----
@@ -918,13 +949,38 @@ def enrich_market_cap_from_eastmoney(df):
     codes = df["code"].unique().tolist()
     health["total"] = len(codes)
 
+    # prev 复用(48h 内成功跑): 市值日变化慢, 昨日值足够做 50/100/300亿 分档;
+    # 逐只东财+每只一次代理获取是 20 分钟级成本 → 只对缺失/新增票走活取
+    prev_caps, reused = {}, 0
+    _prev_path = OUT_CSV.parent / "semiannual_investment_prev.csv"
+    try:
+        if _prev_path.exists() and (_time.time() - _prev_path.stat().st_mtime) < 48 * 3600:
+            _pv = pd.read_csv(_prev_path, dtype={"code": str}).dropna(subset=["mkt_cap_yi"])
+            prev_caps = {c.zfill(6): float(v) for c, v in zip(_pv["code"], _pv["mkt_cap_yi"]) if v and v > 0}
+    except Exception:
+        prev_caps = {}
+    todo = []
+    for code in codes:
+        cap = prev_caps.get(str(code).zfill(6))
+        if cap:
+            mask = df["code"] == code
+            df.loc[mask, "mkt_cap_yi"] = cap
+            df.loc[mask, "mkt_cap_tier"] = get_mkt_cap_tier(cap)
+            reused += 1
+        else:
+            todo.append(code)
+    health["prev"] = reused
+    if prev_caps:
+        eprint(f"     Reused mkt_cap for {reused}/{len(codes)} from prev (<48h), live-fetching {len(todo)}")
+
+    # 代理只设一次(原实现每只一次 _get_qg_proxy 网络往返); 失败重试在 _try_fetch 内自动轮换
+    try:
+        _set_requests_proxy(_get_qg_proxy())
+    except Exception:
+        pass
+
     failed_codes = []
-    for i, code in enumerate(codes):
-        try:
-            proxy_url = _get_qg_proxy()
-            _set_requests_proxy(proxy_url)
-        except Exception:
-            pass
+    for i, code in enumerate(todo):
         try:
             secid = secid_from_code(code)
             d = _try_fetch(secid)
@@ -971,8 +1027,8 @@ def enrich_market_cap_from_eastmoney(df):
             else:
                 health["failed"] += 1
 
-    # Health
-    live_pct = health["live"] / health["total"] if health["total"] > 0 else 0
+    # Health (prev 复用算已覆盖)
+    live_pct = (health["live"] + reused) / health["total"] if health["total"] > 0 else 0
     if live_pct < 0.3:
         health["status"] = "error"
         eprint(f"     🔴 Eastmoney mkt-cap: {health['live']}/{health['total']} live, {health['fallback']} fallback, {health['failed']} failed")
@@ -1179,8 +1235,13 @@ def compute_fund_flow_proxy(df_noevent, window=5):
     Uses akshare stock_individual_fund_flow per-stock. Returns dict: code→rank-pct score."""
     if df_noevent.empty: return {}
     import akshare as ak
+    import socket as _socket
+    _socket.setdefaulttimeout(15)  # akshare 调用无显式 timeout, 套全局兜底防无限挂起
     flow_scores = {}
     codes = df_noevent["code"].tolist()
+    if len(codes) > 300:           # 上限 300: 防 A-C 修好后这里成为新超时点
+        eprint(f"  ⚠️ fund_flow proxy capped at 300/{len(codes)} stocks")
+        codes = codes[:300]
     for i, code in enumerate(codes):
         code_s = str(code).zfill(6)
         try:
@@ -2500,9 +2561,28 @@ def main():
 
     all_codes = df["code"].unique().tolist()
 
-    # Step 4: Income statements
-    fin_data = fetch_income_statements(all_codes, PERIOD_H1, PERIOD_Q1, PERIOD_H1_PRIOR, PERIOD_Q1_PRIOR)
-    hist_q = fetch_historical_quarterly_profits(all_codes, PERIOD_H1)
+    # Step 4: Income statements — 缓存自动复用(全量时钟年龄门, 默认36h):
+    # 披露季新实际值最多滞后36h; 预告/快报(stage 1-2)仍每日新鲜,断层信号不受影响。
+    # 全量时钟存 pickle ts 内(增量补爬存盘不 bump, 否则永不触发全量刷新)。
+    fin_data, hist_q, cache_ts = _load_income_cache()
+    cache_age_h = (_time.time() - cache_ts) / 3600 if cache_ts else None
+    max_age_h = float(_os.environ.get("INCOME_CACHE_MAX_AGE", "36"))
+    if INCOME_MODE == "cache" or (cache_age_h is not None and cache_age_h < max_age_h):
+        eprint(f"[3/5] Cached income statements fresh (age={cache_age_h:.1f}h < {max_age_h}h)")
+    else:
+        fin_data, hist_q = None, None
+    if fin_data is None:
+        eprint("[3/5] Fetching income statements (cjpy, full refresh)...")
+        fin_data = fetch_income_statements(all_codes, PERIOD_H1, PERIOD_Q1, PERIOD_H1_PRIOR, PERIOD_Q1_PRIOR)
+        hist_q = fetch_historical_quarterly_profits(all_codes, PERIOD_H1)
+        _save_income_cache(fin_data, hist_q)
+    else:
+        missing = [c for c in all_codes if c not in fin_data]
+        if missing:
+            eprint(f"  cache miss on {len(missing)} new codes, fetching incrementally...")
+            fin_data.update(fetch_income_statements(missing, PERIOD_H1, PERIOD_Q1, PERIOD_H1_PRIOR, PERIOD_Q1_PRIOR))
+            hist_q.update(fetch_historical_quarterly_profits(missing, PERIOD_H1))
+            _save_income_cache(fin_data, hist_q, ts=cache_ts)
 
     # Step 5: Q2 + SUE
     df = calculate_q2_and_sue(df, fin_data, hist_q)
@@ -2541,21 +2621,57 @@ def main():
         df["mkt_cap_tier"] = df["mkt_cap_tier"].fillna("N/A")
 
     # Step 7: Price data + event study
+    # prev 复用(7 天内成功跑): 事件窗(20 交易日≈30 自然日)已走完且预告日未变的票,
+    # CAR/preCAR 是定值不会再变 → 冻结, 只重算 新预告/预告日变更/窗口未走完/缺指标 的票
+    _METRIC_COLS = ["open_gap_pct","intraday_pct","day_return_pct","vol_ratio",
+                    "car_3d","car_5d","car_10d","car_20d","car_5d_abnormal",
+                    "pre_car_raw","pre_car_abnormal","event_days_available"]
+    prev_metrics, need_price_codes = None, list(all_codes)
+    _ppath = OUT_CSV.parent / "semiannual_investment_prev.csv"
+    if _ppath.exists() and (_time.time() - _ppath.stat().st_mtime) < 7 * 86400:
+        try:
+            _pm = pd.read_csv(_ppath, dtype={"code": str})
+            _pm["code"] = _pm["code"].str.zfill(6)
+            prev_metrics = _pm.set_index("code")
+            _today_ts = pd.Timestamp(TODAY_STR)
+            def _need_price(code, notice):
+                if code not in prev_metrics.index: return True
+                prow = prev_metrics.loc[code]
+                _mc = [c for c in _METRIC_COLS if c in prev_metrics.columns]
+                if prow[_mc].isna().all(): return True
+                pnotice = str(prow.get("notice_date") or "")
+                if pnotice and str(notice) != pnotice: return True   # 预告日变了
+                try:
+                    if (_today_ts - pd.Timestamp(pnotice)).days <= 30: return True  # 事件窗未走完
+                except Exception:
+                    return True
+                return False
+            need_price_codes = [c for c, n in zip(df["code"], df["notice_date"]) if _need_price(str(c).zfill(6), n)]
+            eprint(f"  Price recompute set: {len(need_price_codes)}/{len(all_codes)} (rest frozen from prev)")
+        except Exception as e:
+            eprint(f"  prev metrics reuse failed ({e}), full recompute")
+            prev_metrics, need_price_codes = None, list(all_codes)
+
     if not args.no_price and len(df) > 0:
         earliest = df["notice_date"].min()
         if pd.notna(earliest):
             price_start = (earliest - timedelta(days=40)).strftime("%Y%m%d")
         else:
             price_start = "20260401"
-        price_cache = fetch_price_data(all_codes, start_date=price_start, end_date=TODAY_STR)
+        price_cache = fetch_price_data(need_price_codes, start_date=price_start, end_date=TODAY_STR)
+        _pbasis = max(len(need_price_codes), 1)
         data_health["price"]["stocks"] = len(price_cache) - 1  # exclude __benchmark__
-        if data_health["price"]["stocks"] < data_health["price"]["total"] * 0.5:
+        if data_health["price"]["stocks"] < _pbasis * 0.5:
             data_health["price"]["status"] = "error"
-            eprint(f"     🔴 Price data: {data_health['price']['stocks']}/{data_health['price']['total']} stocks (preCAR/Price factors degraded)")
-        elif data_health["price"]["stocks"] < data_health["price"]["total"]:
+            eprint(f"     🔴 Price data: {data_health['price']['stocks']}/{_pbasis} recompute-set stocks (preCAR/Price factors degraded)")
+        elif data_health["price"]["stocks"] < _pbasis:
             data_health["price"]["status"] = "warn"
-            eprint(f"     🟡 Price data: {data_health['price']['stocks']}/{data_health['price']['total']} stocks (some CARs NaN)")
+            eprint(f"     🟡 Price data: {data_health['price']['stocks']}/{_pbasis} recompute-set stocks (some CARs NaN)")
         df = compute_all_event_metrics(df, price_cache)
+        if prev_metrics is not None:
+            _pmc = [c for c in _METRIC_COLS if c in prev_metrics.columns]
+            for col in _pmc:
+                df[col] = df[col].fillna(df["code"].str.zfill(6).map(prev_metrics[col]))
     else:
         for c in ["open_gap_pct","intraday_pct","day_return_pct","vol_ratio",
                    "car_3d","car_5d","car_10d","car_20d","car_5d_abnormal",

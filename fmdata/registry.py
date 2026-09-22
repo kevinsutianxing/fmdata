@@ -77,7 +77,11 @@ def scan_csv(path: Path, date_col: str = None) -> dict:
     if not path.exists():
         return {"rows": 0, "exists": False}
 
-    df = pd.read_csv(path, nrows=5)
+    try:
+        df = pd.read_csv(path, nrows=5)
+    except pd.errors.EmptyDataError:
+        # 空文件(如只含换行的 failures 清单)不该炸整个 registry 扫描/注册
+        return {"rows": 0, "exists": True, "columns": [], "empty": True}
     cols = list(df.columns)
     full_rows = sum(1 for _ in open(path)) - 1
 

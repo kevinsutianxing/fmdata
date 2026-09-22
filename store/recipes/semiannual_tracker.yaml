@@ -7,4 +7,4 @@ update_freq: daily
 fetch:
   func: agent
   command: "python3 /home/ubuntu/fmdata/scripts/fetch_semiannual_tracker.py"
-  timeout: 180
+  timeout: 360
