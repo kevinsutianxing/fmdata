@@ -1,0 +1,62 @@
+{
+ "source": "fmdata 本地: analyst_consensus + consensus_panel + consensus_snapshots + market/daily-matrix",
+ "structure": "长表 factor_name,ts_code,trade_date,factor_value（同 ts_factor_value.csv）",
+ "categories": [
+  {
+   "category": "Expectation",
+   "cn": "预期水平",
+   "count": 5,
+   "note": "当前一致预期快照的水平和估值"
+  },
+  {
+   "category": "Revision",
+   "cn": "预期修正",
+   "count": 2,
+   "note": "预期的跨期变化，事件稀疏"
+  }
+ ],
+ "factors": [
+  {
+   "category": "Expectation",
+   "category_cn": "预期水平",
+   "name": "eps_fg_1y",
+   "desc": "一致预期EPS增速(当年→次年) = EPS2/EPS1 - 1。要求 EPS1>0（亏损基期无意义）。A股一致预期系统性偏乐观(截面中位~36%)，用截面排名勿用绝对值。"
+  },
+  {
+   "category": "Expectation",
+   "category_cn": "预期水平",
+   "name": "eps_fg_cagr2",
+   "desc": "一致预期EPS两年复合增速 = (EPS3/EPS1)^0.5 - 1。要求 EPS1>0 且 EPS3>0。"
+  },
+  {
+   "category": "Expectation",
+   "category_cn": "预期水平",
+   "name": "pe_fwd_1y",
+   "desc": "前瞻PE = 最新收盘价(daily-matrix 末日完整K线)/EPS2。要求 EPS2>0。价格日与快照日可能差1-3天。"
+  },
+  {
+   "category": "Expectation",
+   "category_cn": "预期水平",
+   "name": "rating_buy_ratio",
+   "desc": "买入评级占比 = RATING_BUY_NUM/RATING_ORG_NUM。纯'买入'不含'增持'(买入+增持在A股几乎恒为1.0无区分度，纯买入中位~0.67有区分度)。"
+  },
+  {
+   "category": "Expectation",
+   "category_cn": "预期水平",
+   "name": "rating_cover",
+   "desc": "覆盖关注度 = ln(1+覆盖机构数)。高覆盖=市场关注度高(通常大盘股)，作控制变量用。"
+  },
+  {
+   "category": "Revision",
+   "category_cn": "预期修正",
+   "name": "eps_rev_3m",
+   "desc": "一致预期EPS 3个月修正 = consensus_fy1(末月)/consensus_fy1(前3月) - 1，来自月度面板(2017-01起)。要求前值>0。面板近期月覆盖~1800只、双月均正的~589只。trade_date=面板末月月末。"
+  },
+  {
+   "category": "Revision",
+   "category_cn": "预期修正",
+   "name": "rating_rev_1m",
+   "desc": "买入占比月度变化 = 最新周快照买入占比 - 约3周前快照买入占比。事件稀疏(~82%票为0)，非零即信息。trade_date=最新快照日。"
+  }
+ ]
+}
