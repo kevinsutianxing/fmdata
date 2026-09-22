@@ -1,0 +1,8 @@
+name: stock_pledge
+category: fundamentals
+description: "股权质押统计(tushare pledge_stat) - 全市场质押比例/质押股数/质押笔数(最新快照)"
+update_freq: weekly
+fetch:
+  func: pledge_stat
+file: fundamentals/stock_pledge.csv
+source: tushare

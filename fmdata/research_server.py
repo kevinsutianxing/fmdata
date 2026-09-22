@@ -270,6 +270,41 @@ def resolve_financial_entity(
     }
 
 
+# ── 个股深度研究 fan-out (2026-09-21) ──────────────────────────────────
+# 跨数据集单股全景: server 端按 code 过滤后返回, 调用方永不接触全表.
+# 无 research key (与 /data 一致的开 localhost 姿态; 不新增暴露面).
+
+
+@app.get("/research/stock/{code}")
+def stock_deep_research(
+    code: str,
+    sections: str | None = None,
+    as_of: str | None = None,
+) -> dict[str, Any]:
+    import json
+
+    import numpy as np
+
+    from fmdata.stock_research import SECTION_ORDER, build_stock_report
+
+    wanted = [s.strip() for s in sections.split(",") if s.strip()] if sections else None
+    unknown = [s for s in (wanted or []) if s not in SECTION_ORDER]
+    report = build_stock_report(code, wanted, as_of)
+    if unknown:
+        report["unknown_sections_ignored"] = unknown
+    if report.get("status") in {"not_found", "error"}:
+        raise HTTPException(status_code=404, detail=report)
+
+    def _np_safe(obj):  # pandas/numpy 标量 → 原生类型, 防 Pydantic 序列化 500
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.floating):
+            return float(obj) if np.isfinite(obj) else None
+        return str(obj)
+
+    return json.loads(json.dumps(report, ensure_ascii=False, default=_np_safe))
+
+
 # Preserve all existing fmdata routes. Research routes are registered first so
 # the root mount cannot shadow them.
 app.mount("/", legacy_app)

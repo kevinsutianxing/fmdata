@@ -1,0 +1,11 @@
+name: stock_ipo
+category: fundamentals
+description: "A股IPO发行数据(tushare new_share) - 发行价/发行量/募资额/中签率/上市日期, 2023至今(覆盖新股招股书基本信息)"
+update_freq: weekly
+fetch:
+  func: new_share
+  params:
+    start_date: '20230101'
+  date_col: list_date
+file: fundamentals/stock_ipo.csv
+source: tushare
