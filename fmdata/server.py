@@ -462,10 +462,12 @@ def get_recipe(name: str):
 # ---- Fetch (on-demand) ----
 
 @app.post("/fetch/{name}")
-def fetch_dataset_endpoint(name: str, request: Request):
+async def fetch_dataset_endpoint(name: str, request: Request):
     """Trigger on-demand fetch for a dataset using its recipe.
 
     Agent/remote recipes require X-API-Key header.
+    Optional JSON body {"params": {...}} overrides the recipe's YAML fetch.params
+    (agent recipes receive it via FMDATA_PARAMS env; 2026-10-09, 修 POST 参数被吞).
     """
     recipe = load_recipe(name)
     if not recipe:
@@ -478,8 +480,15 @@ def fetch_dataset_endpoint(name: str, request: Request):
         auth_err = _check_admin_key(request)
         if auth_err:
             return auth_err
+    body_params = None
+    try:
+        body = await request.json()
+        if isinstance(body, dict) and isinstance(body.get("params"), dict):
+            body_params = body["params"]
+    except Exception:
+        body_params = None
     from fmdata.recipe_fetcher import fetch_dataset as do_fetch
-    result = do_fetch(name)
+    result = do_fetch(name, params_override=body_params)
     # Business failure (allowlist rejection, upstream/proxy error, script crash) must NOT
     # return 2xx — otherwise status-code-only monitors see "200 OK" while data goes stale
     # for days (us_stock_spot silently failed 12 days this way, 2026-07-20→08-01).

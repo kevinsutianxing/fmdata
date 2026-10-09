@@ -48,6 +48,9 @@ AGENT_SCRIPT_ALLOWLIST = {
     "fetch_index_weight_000300": "/home/ubuntu/fmdata/store/scripts/fetch_index_weight_000300.py",
     "fetch_index_weight_hs300_zz500": "/home/ubuntu/fmdata/store/scripts/fetch_index_weight_hs300_zz500.py",
     "fetch_adj_factor_csi300": "/home/ubuntu/fmdata/store/scripts/fetch_adj_factor_csi300.py",
+    "fetch_report_rc_monthly": "/home/ubuntu/fmdata/store/scripts/fetch_report_rc_monthly.py",
+    "fetch_daily_window": "/home/ubuntu/fmdata/store/scripts/fetch_daily_window.py",
+    "fetch_suspend_d_increment": "/home/ubuntu/fmdata/store/scripts/fetch_suspend_d_increment.py",
     # 分析师一致预期因子表 (本地 analyst_consensus/panel/snapshots + daily-matrix)
     "build_consensus_factors": "/home/ubuntu/fmdata/store/scripts/build_consensus_factors.py",
     # 统一因子库 (2026-09-14): 四源目录 + 单入口查询门面
@@ -559,8 +562,12 @@ class RecipeFetcher:
             return {"status": "error", "message": f"unsupported command: {command}. Use 'python3 <allowlisted_script>' or 'cp <src> <dst>'"}
 
         logger.info(f"fetching {name} via agent: {' '.join(argv)}")
+        run_env = os.environ.copy()
+        params_override = getattr(self, "params_override", None)
+        if params_override:
+            run_env["FMDATA_PARAMS"] = json.dumps(params_override, ensure_ascii=False)
         result = subprocess.run(
-            argv, capture_output=True, text=True, timeout=timeout
+            argv, capture_output=True, text=True, timeout=timeout, env=run_env
         )
 
         if result.returncode != 0:
@@ -671,8 +678,12 @@ class RecipeFetcher:
                 return None
 
 
-def fetch_dataset(name: str) -> dict:
-    """Fetch a dataset by name using its recipe. Returns status dict."""
+def fetch_dataset(name: str, params_override: dict | None = None) -> dict:
+    """Fetch a dataset by name using its recipe. Returns status dict.
+
+    params_override: POST /fetch/{name} body 的 params 字段（agent recipe 经
+    FMDATA_PARAMS 环境变量传给脚本，脚本可覆盖 YAML 默认参数）。
+    """
     from fmdata.registry import load_recipe, update_dataset_stats, get_dataset, register_dataset
 
     recipe = load_recipe(name)
@@ -680,6 +691,8 @@ def fetch_dataset(name: str) -> dict:
         return {"status": "error", "message": f"no recipe found for '{name}'"}
 
     fetcher = RecipeFetcher()
+    if params_override:
+        fetcher.params_override = params_override
     result = fetcher.fetch(recipe)
 
     if result.get("status") == "ok":

@@ -1,0 +1,15 @@
+category: factors
+description: '统一因子查询门面: POST /fetch/factor_query 直接带 body {"params":{factor_id,trade_date?,ts_code?}}(2026-10-09起,免改YAML); 或改 fetch.params, 结果在 /data/factor_query
+  (统一长表 factor_name,ts_code,trade_date,factor_value). params: factor_id 必填(sw.动量/ts.alpha101_1/cons.eps_fg_1y/cjpy.<名>,
+  全目录见 /data/factor_catalog); trade_date 选填 YYYYMMDD; ts_code 选填(cjpy 源必填, ts 源与 trade_date
+  至少其一). sw/cons 本地切片, ts 按需拉 tushare(试用态每日约1000次配额,09-14实测6次/s无阻), cjpy 走天软'
+fetch:
+  command: python3 /home/ubuntu/fmdata/store/scripts/factor_query.py
+  func: agent
+  params:
+    factor_id: cons.eps_fg_1y
+  timeout: 600
+file: factors/factor_query.csv
+name: factor_query
+source: agent
+update_freq: ondemand

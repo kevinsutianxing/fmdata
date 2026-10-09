@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 """统一因子查询门面 —— 单入口取任意源因子，输出统一长表。
 
-用法（同 ts_factor_value 的既有模式）：
-  1. 改 recipes/factor_query.yaml 的 fetch.params：
-     factor_id  必填，形如 sw.动量 / ts.alpha101_1 / cons.eps_fg_1y / cjpy.<名>
-     trade_date 选填 YYYYMMDD（cjpy 源必填）
-     ts_code    选填（cjpy 源必填；ts 源 ts_code/trade_date 至少一个）
-  2. POST /fetch/factor_query
-  3. GET /data/factor_query → 长表 factor_name,ts_code,trade_date,factor_value
+用法（2026-10-09 起 POST body 参数直传，不再需要改 YAML）：
+  1. POST /fetch/factor_query  body {"params": {"factor_id": "ts.yoy_roe", "trade_date": "20260930"}}
+     （agent recipe 经 FMDATA_PARAMS 环境变量传入；X-API-Key 同旧）
+  2. GET /data/factor_query → 长表 factor_name,ts_code,trade_date,factor_value
+  直调也行：python3 factor_query.py --factor-id sw.动量 --trade-date 20260831
+  旧路径（改 YAML params 再 POST）仍兼容，优先级：POST body > argv > YAML
   全目录（含各因子口径/PIT警告）：GET /data/factor_catalog
 
 路由：
@@ -40,9 +39,24 @@ def norm_date(d):
     return str(d).replace("-", "").strip()
 
 
-# ── 读参数（agent recipe 自读 yaml，params 即查询请求）──
+# ── 读参数（三级优先：POST body(经 FMDATA_PARAMS env, 2026-10-09) > 命令行 argv > YAML 默认）──
 cfg = yaml.safe_load(open(RECIPE))
-params = (cfg.get("fetch") or {}).get("params") or {}
+params = dict((cfg.get("fetch") or {}).get("params") or {})
+_env_params = os.environ.get("FMDATA_PARAMS")
+if _env_params:
+    import json as _json
+    try:
+        _ep = _json.loads(_env_params)
+        if isinstance(_ep, dict):
+            params.update({k: v for k, v in _ep.items() if v not in (None, "")})
+    except _json.JSONDecodeError:
+        die(f"FMDATA_PARAMS 不是合法 JSON: {_env_params[:100]!r}")
+_ap = __import__("argparse").ArgumentParser(add_help=False)
+_ap.add_argument("--factor-id"); _ap.add_argument("--trade-date"); _ap.add_argument("--ts-code")
+_args, _ = _ap.parse_known_args()
+if _args.factor_id: params["factor_id"] = _args.factor_id
+if _args.trade_date: params["trade_date"] = _args.trade_date
+if _args.ts_code: params["ts_code"] = _args.ts_code
 factor_id = str(params.get("factor_id") or "").strip()
 trade_date = norm_date(params.get("trade_date") or "")
 ts_code = str(params.get("ts_code") or "").strip()
