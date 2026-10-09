@@ -43,8 +43,9 @@ def main() -> int:
 
     end_period = pd.Period.now(freq="M") - 1  # 上月(当月快照未出)
     months = pd.period_range(START, end_period, freq="M")
-    # 最近 2 个月强制重拉:服务端分批晚发布(实测筹码先于风格数天),dedupe keep=last 幂等
-    force = {str(m.end_time.date()) for m in months[-2:]}
+    # 最近 3 个月强制重拉:服务端分批晚发布且顺序不定(2026-10-08 实测 8 月筹码滞后 38 天仍未发,
+    # 2 个月窗口会让 Aug 筹码永远错过 force 集),dedupe keep=last 幂等
+    force = {str(m.end_time.date()) for m in months[-3:]}
     todo = [m for m in months if str(m.end_time.date()) not in done or str(m.end_time.date()) in force]
     log(f"待回填 {len(todo)} 个月: {todo[0]} → {todo[-1]}" if todo else "无可回填")
 
