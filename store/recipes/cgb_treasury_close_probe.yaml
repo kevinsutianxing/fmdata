@@ -1,0 +1,11 @@
+category: market
+description: 测试中债国债指数替代价格序列
+fetch:
+  proxy: direct
+  date_col: date
+  func: bond_china_close_return
+  incremental: false
+file: market/cgb_treasury_close_probe.csv
+name: cgb_treasury_close_probe
+source: akshare
+update_freq: manual

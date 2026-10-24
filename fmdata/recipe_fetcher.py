@@ -257,7 +257,7 @@ class RecipeFetcher:
         source = recipe.get("source", "unknown")
         fetch_cfg = recipe.get("fetch", {})
         name = recipe.get("name", "unknown")
-        needs_proxy = fetch_cfg.get("proxy") == "qg" or source == "akshare"
+        needs_proxy = (fetch_cfg.get("proxy") == "qg" or source == "akshare") and fetch_cfg.get("proxy") != "direct"
 
         try:
             proxy_url = None

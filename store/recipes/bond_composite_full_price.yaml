@@ -1,0 +1,14 @@
+name: bond_composite_full_price
+category: market
+description: 中债综合指数(全价), 日频, 用于基金业绩比较基准的债券成分
+file: market/bond_composite_full_price.csv
+source: akshare
+update_freq: daily
+fetch:
+  proxy: direct
+  incremental: false
+  date_col: date
+  func: bond_composite_index_cbond
+  params:
+    indicator: 全价
+    period: 总值

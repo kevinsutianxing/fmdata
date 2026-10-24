@@ -1,0 +1,10 @@
+category: macro
+description: 中国国债收益率曲线完整历史探针
+fetch:
+  proxy: direct
+  func: bond_china_yield
+  incremental: false
+file: macro/bond_china_yield_probe2.csv
+name: bond_china_yield_probe2
+source: akshare
+update_freq: manual

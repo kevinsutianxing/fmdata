@@ -1,0 +1,11 @@
+category: macro
+description: 测试中债国债替代接口覆盖
+fetch:
+  proxy: direct
+  date_col: date
+  func: bond_treasury_index_cbond
+  incremental: false
+file: macro/cgb_treasury_alt_probe.csv
+name: cgb_treasury_alt_probe
+source: akshare
+update_freq: manual
