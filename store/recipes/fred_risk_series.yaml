@@ -1,0 +1,12 @@
+name: fred_risk_series
+category: overseas
+description: "FRED 美国风险监测序列包(长表 series_id/date/value,单位全Percent): BAMLH0A0HYM2 高收益OAS/BAMLC0A0CM 投资级OAS/SOFR 担保隔夜/T10Y2Y/T10Y3M 期限利差/DGS2 两年国债; 近10年起(2016-11); 🔴ICE BofA 两序列 FRED 端仅供给近3年(ICE授权滚动窗口,2023-11起),其余序列全史; TEDRATE 2022-01-21 停更不入包(LIBOR退场,替代口径=SOFR+BAML OAS); VIXCLS 不入包(vix 数据集已有); 发布节奏: 国债曲线当日16:00更新当日值,OAS/SOFR/SOFR系T+1上午; 脚本双位置: master=SZ81 ~/fmdata/store/scripts/remote-hk43/, 运行=hk43 ~/.openclaw/skills/fred-data/scripts/"
+file: market/fred_risk_series.csv
+source: remote
+update_freq: daily
+fetch:
+  host: hk43
+  command: bash -c "set -a; source ~/.fred_env; python3 ~/.openclaw/skills/fred-data/scripts/fetch_fred_risk_series.py"
+  env: [FRED_API_KEY]
+  parser: fred
+  timeout: 180

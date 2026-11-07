@@ -27,7 +27,9 @@ mapfile -t WATCHED < <(grep -lE '^category:\s*overseas' "${RECIPES}"/*.yaml 2>/d
 
 STALE_LIST=""
 for ds in "${WATCHED[@]}"; do
-  csv="${OVERSEAS}/${ds}.csv"
+  # 2026-11-07: recipe 的 file: 字段是权威路径(fred_risk_series 落 market/), 旧默认 overseas/ 兼容
+  rel=$(grep -m1 '^file:' "${RECIPES}/${ds}.yaml" 2>/dev/null | sed -e 's/^file:[[:space:]]*//' -e 's/^"//' -e 's/"[[:space:]]*$//' -e "s/^'//" -e "s/'[[:space:]]*$//")
+  csv="${STORE}/${rel:-overseas/${ds}.csv}"
   [ -f "$csv" ] || { STALE_LIST="${STALE_LIST}${ds}(无CSV文件)\n"; continue; }
   mtime_epoch=$(stat -c %Y "$csv")
   age_days=$(( (now_epoch - mtime_epoch) / 86400 ))
