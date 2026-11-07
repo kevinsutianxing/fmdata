@@ -45,6 +45,8 @@ AGENT_SCRIPT_ALLOWLIST = {
     "fetch_fund_nav": "/home/ubuntu/fmdata/store/scripts/fetch_fund_nav.py",
     # Alpha Vantage 美股盈利 (2026-11-07, 免费档25次/天全局配额, 3组轮转)
     "fetch_av_earnings": "/home/ubuntu/fmdata/store/scripts/fetch_av_earnings.py",
+    # FMP /stable 三件: 财报日历/分析师预估/季度三表 (2026-11-07, 免费档250/天)
+    "fetch_fmp": "/home/ubuntu/fmdata/store/scripts/fetch_fmp.py",
     # 海外美股快照 (eastmoney push2his + QG 代理池)
     "fetch_us_stock_spot": "/home/ubuntu/fmdata/store/scripts/fetch_us_stock_spot.py",
     # CSI300 指数增强回测数据 (tushare, 半年分页 / 逐只 adj_factor)

@@ -1,0 +1,10 @@
+name: fmp_analyst_estimates
+category: us_equity
+description: 'FMP 年频分析师预估(30核心股, 前瞻多财年): revenue/ebitda/ebit/netIncome/eps 各 Low/Avg/High. cron 周二/四/六 06:30 三组轮转(每组10只10调用); 宽表一行=一财年. 2026-11-07 建'
+file: market/fmp_analyst_estimates.csv
+source: agent
+update_freq: weekly
+fetch:
+  func: agent
+  command: "python3 /home/ubuntu/fmdata/store/scripts/fetch_fmp.py estimates"
+  timeout: 300

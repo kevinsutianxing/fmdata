@@ -1,0 +1,10 @@
+name: fmp_us_statements
+category: us_equity
+description: 'FMP 美股季度三表 tidy 长表(30核心股×income/balance/cashflow, 带 filing_date/accepted_date 天然PIT; 🔴免费档limit硬顶5期/次=滚动近5季, 靠轮转本地累积历史). cron 周一/三/五 06:30 三组轮转(每组10只30调用). 2026-11-07 建'
+file: market/fmp_us_statements.csv
+source: agent
+update_freq: weekly
+fetch:
+  func: agent
+  command: "python3 /home/ubuntu/fmdata/store/scripts/fetch_fmp.py statements"
+  timeout: 600

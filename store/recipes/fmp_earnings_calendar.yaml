@@ -1,0 +1,10 @@
+name: fmp_earnings_calendar
+category: us_equity
+description: 'FMP 美股前瞻财报日历(滚动窗 -7d..+21d): symbol/date/eps_estimated/eps_actual/revenue_estimated/revenue_actual. 每日1调用; 催化剂层用; 撞402立即停. 2026-11-07 建'
+file: market/fmp_earnings_calendar.csv
+source: agent
+update_freq: daily
+fetch:
+  func: agent
+  command: "python3 /home/ubuntu/fmdata/store/scripts/fetch_fmp.py calendar"
+  timeout: 120
