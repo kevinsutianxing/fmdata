@@ -1,0 +1,10 @@
+name: av_us_earnings
+category: us_equity
+description: 'Alpha Vantage 美股盈利长表(30核心股=cboe_iv_surface同池): annual+quarterly 全史, 含 estimatedEPS/reportedEPS/surprise/surprisePercent. 🔴免费档25次/天全局配额: 3组轮转(每组10只), cron 日/二/四各刷一组, 每symbol 1次调用取全史; 参数 group=0|1|2 或 symbols=[...] 试点用; FMDATA_PARAMS 透传. 2026-11-07 建'
+file: market/av_us_earnings.csv
+source: agent
+update_freq: weekly
+fetch:
+  func: agent
+  command: "python3 /home/ubuntu/fmdata/store/scripts/fetch_av_earnings.py"
+  timeout: 600

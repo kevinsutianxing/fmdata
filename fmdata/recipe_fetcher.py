@@ -4,6 +4,7 @@ import logging
 import os
 import shlex
 import subprocess
+import sys
 import time
 from datetime import datetime
 from pathlib import Path
@@ -42,6 +43,8 @@ AGENT_SCRIPT_ALLOWLIST = {
     # 半年报追踪 (快报+预告+Q2拆解+同比/环比)
     "fetch_semiannual_tracker": "/home/ubuntu/fmdata/scripts/fetch_semiannual_tracker.py",
     "fetch_fund_nav": "/home/ubuntu/fmdata/store/scripts/fetch_fund_nav.py",
+    # Alpha Vantage 美股盈利 (2026-11-07, 免费档25次/天全局配额, 3组轮转)
+    "fetch_av_earnings": "/home/ubuntu/fmdata/store/scripts/fetch_av_earnings.py",
     # 海外美股快照 (eastmoney push2his + QG 代理池)
     "fetch_us_stock_spot": "/home/ubuntu/fmdata/store/scripts/fetch_us_stock_spot.py",
     # CSI300 指数增强回测数据 (tushare, 半年分页 / 逐只 adj_factor)
@@ -65,6 +68,11 @@ AGENT_SCRIPT_ALLOWLIST = {
     "fetch_cb_cashflows_pit": "/home/ubuntu/fmdata/scripts/fetch_cb_cashflows_pit.py",
     "fetch_cb_stock_fundamentals_pit": "/home/ubuntu/fmdata/scripts/fetch_cb_stock_fundamentals_pit.py",
     "fetch_cb_stock_daily": "/home/ubuntu/fmdata/scripts/fetch_cb_stock_daily.py",
+    # global-volatility-risk-monitor 补源 (2026-11-07): 五指数 em kline+datacenter / USDCNY中间价 cjpy
+    "fetch_index_global_monitor": "/home/ubuntu/fmdata/scripts/fetch_index_global_monitor.py",
+    "fetch_usdcny_parity": "/home/ubuntu/fmdata/scripts/fetch_usdcny_parity.py",
+    # 个股/ETF IV surface (Cboe 延迟期权链快照, 2026-11-07): monitor 最后数据缺口
+    "fetch_cboe_iv_surface": "/home/ubuntu/fmdata/store/scripts/fetch_cboe_iv_surface.py",
     # 披露/融资融券/互动易/业绩 (akshare-em 系, 2026-08-17 补登记)
     "fetch_disclosure": "/home/ubuntu/fmdata/store/scripts/fetch_disclosure.py",
     "fetch_income_full": "/home/ubuntu/fmdata/store/scripts/fetch_income_full.py",
@@ -100,13 +108,45 @@ _QG_POOLS = [
 ]
 
 
-def _get_qg_proxy():
+# 2026-10-27 省钱改造: 粘性 IP 缓存——一次 /get 取到的出口 IP 复用到失效/TTL,不再每请求抽新
+# (背景: 双池 12 天烧穿 9894 单位,每次 /get 抽 IP = 1 单位; us_stock_spot 单跑 30 页 × 2-6 IP)
+_QG_IP_CACHE = {"url": None, "pool": None, "ts": 0.0, "reuses": 0}
+_QG_IP_TTL = float(os.environ.get("QG_IP_TTL", "600"))  # 粘性时长,默认 10 分钟
+_QG_USAGE_LOG = os.path.expanduser("~/.openclaw/logs/qg-proxy-usage.log")
+
+
+def _qg_usage_log(event, pool, extra=""):
+    """per-caller 计数日志(Review→Rule: 池子两度烧穿,以后归因不用考古)。"""
+    try:
+        caller = sys._getframe(2).f_code.co_name
+        script = sys.argv[0].rsplit("/", 1)[-1] if sys.argv and sys.argv[0] else "?"
+        with open(_QG_USAGE_LOG, "a") as f:
+            f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} caller={caller}@{script} "
+                    f"event={event} pool={pool} {extra}".rstrip() + "\n")
+    except Exception:
+        pass  # 计数日志绝不影响取数主路径
+
+
+def _qg_ip_failed():
+    """标记粘性 IP 失效(代理连不上/被目标站拒),下次 _get_qg_proxy 抽新。"""
+    if _QG_IP_CACHE["url"]:
+        _qg_usage_log("invalidate", _QG_IP_CACHE["pool"] or "?",
+                      extra=f"reuses={_QG_IP_CACHE['reuses']}")
+    _QG_IP_CACHE.update(url=None, pool=None, ts=0.0, reuses=0)
+
+
+def _get_qg_proxy(force_new=False):
     """Fetch a QG proxy URL from dual pools with fallback.
     Tries pool 0 (primary, env-configured) then pool 1 (kevinsu fallback).
+    2026-10-27 粘性复用: 缓存 IP 未过期且未失效时直接返回(0 消耗),仅 force_new/
+    TTL 过期/失效标记后才打 /get(=1 单位)。连一次 IP,多取几回。
     """
-    import json
+    if (not force_new and _QG_IP_CACHE["url"]
+            and time.time() - _QG_IP_CACHE["ts"] < _QG_IP_TTL):
+        _QG_IP_CACHE["reuses"] += 1
+        return _QG_IP_CACHE["url"]
+
     from urllib.request import urlopen, Request
-    from urllib.error import URLError
 
     for pi, pool in enumerate(_QG_POOLS):
         key, pwd = pool["key"], pool["pwd"]
@@ -121,9 +161,15 @@ def _get_qg_proxy():
                 server = item.get("server") or item.get("proxy_url")
                 if server:
                     bare = server.split("://")[-1]
-                    return f"http://{key}:{pwd}@{bare}"
+                    proxy_url = f"http://{key}:{pwd}@{bare}"
+                    _QG_IP_CACHE.update(
+                        url=proxy_url, pool=("primary" if pi == 0 else "fallback"),
+                        ts=time.time(), reuses=0)
+                    _qg_usage_log("pull", "primary" if pi == 0 else "fallback")
+                    return proxy_url
         except Exception as e:
             pool_label = "primary" if pi == 0 else "fallback"
+            _qg_usage_log("pool_error", pool_label, extra=str(e)[:80])
             logger.warning(f"QG proxy {pool_label} fetch failed: {e}")
     return None
 
@@ -145,8 +191,8 @@ def eastmoney_get(url, params, max_tries=8, timeout=12, backoff=0.15):
     成功技巧(2026-06-16 03:32 生产实证:代理 IP 轮换抓到 06-15 新鲜数据):
     1. 调用方务必用 push2his.eastmoney.com(历史子域)而非 push2(实时子域)——东财对实时子域
        限速远严;akshare 内部打 push2 故经代理必断,业务侧须按 akshare 源码精确参数自连 push2his。
-    2. 每次重试 _get_qg_proxy() 换一个出口 IP,穿代理池对东财的簇集波动窗口(成功率 0-50% 随
-       时间漂移)。代理核心价值=IP 轮换把请求摊薄到多 IP,避免单 IP(含本机)被累计高频打降权。
+    2. 2026-10-27 起粘性 IP: 成功即复用同一出口 IP(_QG_IP_CACHE),失败 _qg_ip_failed()
+       才轮换抽新——簇集波动窗口下抽新次数大幅下降(省 QG 余额),轮换语义仅在失败时保留。
     3. 退避递增(0.5+backoff·i)避免快速重试同一批差 IP;ProxyError 快速失败故高 max_tries 代价低。
     4. 死窗口(0%)穿不过,靠上层 cron 多次跑轮换窗口兜底(脚本诚实 exit success==0 即可)。
 
@@ -163,6 +209,7 @@ def eastmoney_get(url, params, max_tries=8, timeout=12, backoff=0.15):
         try:
             return _rq.Session().get(url, params=params, timeout=timeout).json()
         except Exception:
+            _qg_ip_failed()  # 失败换 IP(粘性语义: 成功复用,失败才轮换)
             _t.sleep(0.5 + i * backoff)
     return None
 
@@ -328,6 +375,7 @@ class RecipeFetcher:
                 last_err = e
                 logger.warning(f"{name} akshare attempt {attempt}/{attempts} failed: {e}")
                 if attempt < attempts:
+                    _qg_ip_failed()  # 失败换 IP(粘性语义: 成功复用,失败才轮换)
                     _set_requests_proxy(_get_qg_proxy() or "")
         if last_err is not None:
             return {"status": "error", "message": f"{func_name}: {last_err}"}
@@ -499,8 +547,70 @@ class RecipeFetcher:
                                   "end": str(w[-1].end_time.date())}, timeout)
                     rows.extend(d.get("records", []))
                     time.sleep(0.15)
+        elif func in ("futures_daily", "index_daily"):
+            # 2026-11-06 新增: 期货/指数日线(季度窗分片)。
+            # 🔴实测单响应上限 240 行,超限静默掐头(metadata 不标 truncated)→ 窗口必须 ≤1 季度(~63行)。
+            # 🔴TL.CFX 会静默别名到 T.CFX,30 年国债必须用 TL0.CFX。
+            from zoneinfo import ZoneInfo
+            tool = "get_futures_daily" if func == "futures_daily" else "get_index_daily"
+            pkey = "instruments" if func == "futures_daily" else "indices"
+            series = params.get(pkey) or []
+            end = params.get("end") or datetime.now(ZoneInfo("Asia/Shanghai")).strftime("%Y%m%d")
+            if not series:
+                return {"status": "error",
+                        "message": f"{func} 需 fetch.params.{pkey}=[{{ts_code,start}},...]"}
+            # 增量: 库中已有序列从最后日期-14天重叠拉起; 新序列用 params.start
+            last_dt: dict = {}
+            if output_path.exists():
+                old_head = pd.read_csv(output_path, usecols=["ts_code", "trade_date"],
+                                       dtype={"ts_code": str, "trade_date": str})
+                if not old_head.empty:
+                    last_dt = old_head.groupby("ts_code")["trade_date"].max().to_dict()
+            rows: list = []
+            stats: dict = {}
+            for s in series:
+                code = s["ts_code"]
+                st = s.get("start")
+                if code in last_dt:
+                    st = (pd.to_datetime(last_dt[code], format="%Y%m%d")
+                          - pd.Timedelta(days=14)).strftime("%Y%m%d")
+                if not st:
+                    return {"status": "error",
+                            "message": f"{pkey} 项 {code} 缺 start 且库中无该序列历史"}
+                got = 0
+                for w in pd.period_range(st, end, freq="Q"):
+                    d = cli.call(tool, {"ts_code": code,
+                                        "start_date": w.start_time.strftime("%Y%m%d"),
+                                        "end_date": min(w.end_time.strftime("%Y%m%d"), end)},
+                                 timeout)
+                    chunk = d.get("data") or []
+                    if len(chunk) >= 240:
+                        logger.warning(f"{name}: {code} 窗口 {w} 返回 {len(chunk)} 行,"
+                                       f"疑似触 240 行上限(掐头风险,须缩小窗口重拉)")
+                    for x in chunk:
+                        x["ts_code"] = code
+                    rows.extend(chunk)
+                    got += len(chunk)
+                    time.sleep(0.15)  # 礼貌限速
+                stats[code] = got
+                if got == 0 and code in last_dt:
+                    logger.warning(f"{name}: {code} 增量区间 0 行(服务端无新数据或下架?)")
+            if not rows:
+                return {"status": "empty", "message": f"SW MCP 返回 0 行({tool} 全部序列为空)"}
+            df = pd.DataFrame(rows).drop_duplicates(subset=["ts_code", "trade_date"], keep="last")
+            if output_path.exists():
+                old = pd.read_csv(output_path, dtype={"ts_code": str, "trade_date": str})
+                if not old.empty:
+                    df = pd.concat([old, df], ignore_index=True)
+                    df = df.drop_duplicates(subset=["ts_code", "trade_date"], keep="last")
+            df = df.sort_values(["ts_code", "trade_date"]).reset_index(drop=True)
+            tmp = output_path.with_suffix(".csv.tmp")
+            df.to_csv(tmp, index=False)
+            tmp.rename(output_path)
+            logger.info(f"saved {name}: {len(df)} rows to {output_path}; pulled={stats}")
+            return {"status": "ok", "rows": len(df), "pulled": stats, "file": str(output_path)}
         else:
-            return {"status": "error", "message": f"未知 sw_mcp func: {func}(factor_value|factor_series)"}
+            return {"status": "error", "message": f"未知 sw_mcp func: {func}(factor_value|factor_series|futures_daily|index_daily)"}
 
         if not rows:
             return {"status": "empty", "message": "SW MCP 返回 0 行(月度因子更新滞后 ~T+7,换上月末日期重试)"}
