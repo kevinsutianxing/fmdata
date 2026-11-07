@@ -35,6 +35,11 @@ SERIES = [
     "T10Y2Y",
     "T10Y3M",
     "DGS2",
+    # 2026-11-08 监控二期补: 10Y 收益率/盈亏平衡通胀/金融条件
+    # (DGS10 与 us_10y_treasury 同源同值, 入包统一走 macro_series 通道)
+    "DGS10",
+    "T10YIE",
+    "NFCI",   # 周更·周五观测·约4-5天发布滞后, Index 单位非 Percent
 ]
 TIMEOUT = 30
 BACKOFF = [2, 5, 10]

@@ -53,6 +53,21 @@ def get(path, params):
     raise RuntimeError(f"exhausted {url}")
 
 
+# 2026-11-08: 免费档对非白名单 symbol 返回 402 "Special Endpoint ... value set
+# for 'symbol'" —— 这是按只封锁, 不是配额耗尽; 逐只跳过让整批继续, 真 402 仍然中止.
+SKIPPED = set()
+
+
+def get_or_skip(path, params, sym):
+    try:
+        return get(path, params)
+    except QuotaStop as e:
+        if "value set for 'symbol'" in str(e):
+            SKIPPED.add(sym)
+            return None
+        raise
+
+
 def load_csv(path, cols):
     rows = []
     if os.path.exists(path):
@@ -95,9 +110,14 @@ def mode_calendar():
 def mode_estimates(symbols):
     """年频分析师预估(前瞻多财年), 宽表一行=一财年, 键=(symbol,date)."""
     path = f"{STORE}/fmp_analyst_estimates.csv"
-    data = get("analyst-estimates", {"symbol": symbols[0], "period": "annual"})
+    data = None
+    for s0 in symbols:
+        data = get_or_skip("analyst-estimates", {"symbol": s0, "period": "annual"}, s0)
+        if data:
+            break
+        time.sleep(1.2)
     if not data:
-        print("estimates: empty for first symbol"); return
+        print("estimates: no accessible symbol in pool; all blocked or empty"); return
     cols = ["symbol", "date", "fetched_at"] + sorted(
         k for k in data[0].keys() if k not in ("symbol", "date"))
     got = {}
@@ -106,7 +126,10 @@ def mode_estimates(symbols):
         if i:
             time.sleep(1.2)
         try:
-            rows = get("analyst-estimates", {"symbol": s, "period": "annual"}) or []
+            rows = get_or_skip("analyst-estimates", {"symbol": s, "period": "annual"}, s)
+            if rows is None:
+                continue
+            rows = rows or []
             for r in rows:
                 r["fetched_at"] = NOW
                 got[(s, r.get("date", ""))] = r
@@ -120,7 +143,7 @@ def mode_estimates(symbols):
     allr = list(old.values()) + list(got.values())
     allr.sort(key=lambda r: (r["symbol"], r["date"]))
     save_csv(path, cols, allr)
-    print(f"estimates ok={ok} fail={fail} rows={len(allr)}")
+    print(f"estimates ok={ok} fail={fail} rows={len(allr)} skipped={sorted(SKIPPED)}")
 
 
 def mode_statements(symbols):
@@ -137,7 +160,9 @@ def mode_statements(symbols):
             if i or label != "income":
                 time.sleep(1.2)
             try:
-                rows = get(ep, {"symbol": s, "period": "quarter"}) or []
+                rows = get_or_skip(ep, {"symbol": s, "period": "quarter"}, s)
+                if rows is None:
+                    break  # 该 symbol 全端点被免费档封锁, 跳到下一只
                 for r in rows:
                     pe, fd, ad = r.get("date", ""), r.get("filingDate", ""), r.get("acceptedDate", "")
                     fy, pq = r.get("fiscalYear", ""), r.get("period", "")
@@ -168,13 +193,16 @@ def mode_statements(symbols):
     allr = list(old.values()) + list(got.values())
     allr.sort(key=lambda r: (r["symbol"], r["statement"], r["period_end"], r["field"]))
     save_csv(path, cols, allr)
-    print(f"statements ok={ok} fail={fail} rows={len(allr)}")
+    print(f"statements ok={ok} fail={fail} rows={len(allr)} skipped={sorted(SKIPPED)}")
 
 
 def main():
     o = json.loads(os.environ.get("FMDATA_PARAMS", "") or "{}")
     mode = o.get("mode") or (sys.argv[1] if len(sys.argv) > 1 else "")
     # 30 核心股 = av_us_earnings/cboe_iv_surface 同池; 3组词法序轮转
+    # 2026-11-08 实测: FMP 免费档按 symbol 白名单放行(仅 ~10 只: AAPL AMD AMZN GOOGL
+    # META MSFT NVDA PLTR TSM TSLA 类), 其余 27 只全端点 402 "Special Endpoint";
+    # get_or_skip 逐只跳过并落日志, 不再整批中断(此前 group 跑到首只被封即全弃).
     symbols = sorted([
         "AAPL","AMAT","AMD","AMZN","ANET","ASML","AVGO","CDNS","CEG","CRDO",
         "CRM","DDOG","ETN","GOOGL","KLAC","LRCX","META","MRVL","MSFT","MU",
