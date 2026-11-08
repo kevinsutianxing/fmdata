@@ -1,0 +1,11 @@
+name: sse50_index_daily
+category: market
+description: "上证50(000016.SH)全历史日线行情(tushare index_daily,积分内;2026-11-08 补监控预热350日缺口,原gangtise源2023-11起)"
+file: market/sse50_index_daily.csv
+source: tushare
+update_freq: daily
+fetch:
+  func: index_daily
+  date_col: trade_date
+  params:
+    ts_code: "000016.SH"

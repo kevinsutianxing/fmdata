@@ -1,0 +1,8 @@
+name: etf_flows_a
+category: market
+description: "A股观察池ETF份额+单位净值(tushare fund_share/fund_nav,4只×2调用;监控侧推导真实申赎流=Δ份额×净值,非成交量推算)"
+file: market/etf_flows_a.csv
+source: agent
+update_freq: daily
+fetch:
+  command: python3 /home/ubuntu/fmdata/store/scripts/fetch_etf_flows.py

@@ -40,6 +40,8 @@ SERIES = [
     "DGS10",
     "T10YIE",
     "NFCI",   # 周更·周五观测·约4-5天发布滞后, Index 单位非 Percent
+    # 2026-11-08 模拟器真实利率: DFF=有效联邦基金利率(日频, 现金收益基准)
+    "DFF",
 ]
 TIMEOUT = 30
 BACKOFF = [2, 5, 10]

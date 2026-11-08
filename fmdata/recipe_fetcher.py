@@ -47,6 +47,7 @@ AGENT_SCRIPT_ALLOWLIST = {
     "fetch_av_earnings": "/home/ubuntu/fmdata/store/scripts/fetch_av_earnings.py",
     # FMP /stable 三件: 财报日历/分析师预估/季度三表 (2026-11-07, 免费档250/天)
     "fetch_fmp": "/home/ubuntu/fmdata/store/scripts/fetch_fmp.py",
+    "fetch_etf_flows": "/home/ubuntu/fmdata/store/scripts/fetch_etf_flows.py",
     # 海外美股快照 (eastmoney push2his + QG 代理池)
     "fetch_us_stock_spot": "/home/ubuntu/fmdata/store/scripts/fetch_us_stock_spot.py",
     # CSI300 指数增强回测数据 (tushare, 半年分页 / 逐只 adj_factor)
@@ -73,6 +74,8 @@ AGENT_SCRIPT_ALLOWLIST = {
     # global-volatility-risk-monitor 补源 (2026-11-07): 五指数 em kline+datacenter / USDCNY中间价 cjpy
     "fetch_index_global_monitor": "/home/ubuntu/fmdata/scripts/fetch_index_global_monitor.py",
     "fetch_usdcny_parity": "/home/ubuntu/fmdata/scripts/fetch_usdcny_parity.py",
+    # CFFEX IO/MO ATM IV 期限结构 (tushare opt_daily 结算价 + Black-76, 2026-11-07): GVRM CFFEX_IO/MO
+    "fetch_cffex_atm_iv": "/home/ubuntu/fmdata/scripts/fetch_cffex_atm_iv.py",
     # 个股/ETF IV surface (Cboe 延迟期权链快照, 2026-11-07): monitor 最后数据缺口
     "fetch_cboe_iv_surface": "/home/ubuntu/fmdata/store/scripts/fetch_cboe_iv_surface.py",
     # 披露/融资融券/互动易/业绩 (akshare-em 系, 2026-08-17 补登记)

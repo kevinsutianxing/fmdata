@@ -1,0 +1,13 @@
+name: dji_index_fred
+category: overseas
+description: "道琼斯工业平均指数(FRED DJIA,10年窗,发布前沿约T+1;2026-11-08 补监控预热350日缺口,原gangtise源2023-11起)"
+file: overseas/dji_index_fred.csv
+source: remote
+update_freq: daily
+fetch:
+  host: hk43
+  command: python3 ~/.openclaw/skills/fred-data/scripts/fred_cli.py observations DJIA --start 2016-01-01 --format csv
+  env: [FRED_API_KEY]
+  parser: fred
+  series_id: DJIA
+  date_col: date

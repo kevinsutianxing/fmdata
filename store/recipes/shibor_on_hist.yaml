@@ -1,0 +1,11 @@
+name: shibor_on_hist
+category: macro
+description: "SHIBOR官方定盘价(隔夜/1周/.../1Y,tushare shibor;2026-11-08 为监控真实历史利率接线而建,回放窗>=2020)"
+file: macro/shibor_on_hist.csv
+source: tushare
+update_freq: daily
+fetch:
+  func: shibor
+  date_col: date
+  params:
+    start_date: "20200101"
