@@ -43,6 +43,14 @@ EM_API_KEY = os.environ.get("EM_API_KEY", "")
 SW_MCP_URL = os.environ.get("SW_MCP_URL", "")
 SW_MCP_CODE = os.environ.get("SW_MCP_CODE", "")
 
+# 腾讯自选股 StockBuddy MCP(OAuth Bearer,无状态 SSE;access_token ~100h 无 refresh_token,
+# 由 recipe_fetcher.westock_renew_token() 用 WESTOCK_FSKEY 登录会话自动重铸续期)
+WESTOCK_MCP_URL = os.environ.get("WESTOCK_MCP_URL", "https://stockbuddy.qq.com/cgi/cgi-bin/openai/mcp/mcp")
+WESTOCK_ACCESS_TOKEN = os.environ.get("WESTOCK_ACCESS_TOKEN", "")
+WESTOCK_CLIENT_ID = os.environ.get("WESTOCK_CLIENT_ID", "")
+WESTOCK_OPENID = os.environ.get("WESTOCK_OPENID", "")
+WESTOCK_FSKEY = os.environ.get("WESTOCK_FSKEY", "")
+
 # HTTP server
 HTTP_HOST = "127.0.0.1"
 HTTP_PORT = 1934

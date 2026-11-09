@@ -11,7 +11,8 @@ from pathlib import Path
 
 import pandas as pd
 
-from fmdata.config import STORE_DIR, EM_API_KEY, SW_MCP_URL, SW_MCP_CODE
+from fmdata.config import (STORE_DIR, EM_API_KEY, SW_MCP_URL, SW_MCP_CODE,
+                           WESTOCK_MCP_URL)
 
 logger = logging.getLogger("fmdata.recipe_fetcher")
 
@@ -301,6 +302,213 @@ class _SwMcpClient:
         return {}
 
 
+def westock_renew_token() -> str:
+    """用 .env 里的 fskey 登录会话重铸 StockBuddy access_token(~100h,无 refresh_token)。
+
+    fskey 失效(返回空串)→ 需人工重授权:浏览器开 authorize 链接登录后,
+    从地址栏/重定向 URL 里把 openid+fskey 抄回 .env(2026-11-09 首接流程)。
+    成功则更新 os.environ + 回写 .env(保 600)。幂等,可被 401 懒触发/cron 调用。
+    """
+    import base64 as _b64
+    import hashlib as _hl
+    import secrets as _sec
+    import requests as _rq
+    from urllib.parse import urlencode
+    from fmdata.config import FMDATA_DIR
+
+    cid = os.environ.get("WESTOCK_CLIENT_ID", "")
+    fskey = os.environ.get("WESTOCK_FSKEY", "")
+    openid = os.environ.get("WESTOCK_OPENID", "")
+    ru = "workbuddy://workbuddy/mcp/connector:fmdata/oauth/callback"
+    if not (cid and fskey and openid):
+        logger.warning("westock 续期缺 WESTOCK_CLIENT_ID/FSKEY/OPENID")
+        return ""
+    verifier = _sec.token_urlsafe(64)[:128]
+    challenge = _b64.urlsafe_b64encode(_hl.sha256(verifier.encode()).digest()).rstrip(b"=").decode()
+    state = _sec.token_urlsafe(8)
+    auth = "https://stockbuddy.qq.com/cgi/cgi-bin/openai/mcp/oauth/authorize?" + urlencode({
+        "response_type": "code", "client_id": cid, "redirect_uri": ru,
+        "code_challenge": challenge, "code_challenge_method": "S256",
+        "scope": "read write", "state": state,
+        "from": "workbuddy", "ref": "web", "openid": openid,
+        "fskey": fskey, "check": "11", "consent": "1"})
+    d = _rq.get(auth, timeout=30).json()
+    if not d.get("code"):
+        logger.warning(f"westock 续期失败(authorize 无 code): {str(d)[:150]}")
+        return ""
+    t = _rq.post("https://stockbuddy.qq.com/cgi/cgi-bin/openai/mcp/oauth/token", data={
+        "grant_type": "authorization_code", "code": d["code"], "redirect_uri": ru,
+        "client_id": cid, "code_verifier": verifier}, timeout=30).json()
+    tok = t.get("access_token", "")
+    if not tok:
+        logger.warning(f"westock 续期失败(token): {str(t)[:150]}")
+        return ""
+    os.environ["WESTOCK_ACCESS_TOKEN"] = tok
+    try:  # 就地更新 .env,进程重启后仍生效
+        env_path = FMDATA_DIR / ".env"
+        lines = env_path.read_text().splitlines()
+        out, seen = [], False
+        for ln in lines:
+            if ln.startswith("WESTOCK_ACCESS_TOKEN="):
+                out.append(f"WESTOCK_ACCESS_TOKEN={tok}")
+                seen = True
+            else:
+                out.append(ln)
+        if not seen:
+            out.append(f"WESTOCK_ACCESS_TOKEN={tok}")
+        env_path.write_text("\n".join(out) + "\n")
+        logger.info("westock token 已续期并回写 .env")
+    except Exception as e:
+        logger.warning(f"westock .env 回写失败(仅进程内生效): {e}")
+    return tok
+
+
+class _WestockMcpClient:
+    """腾讯自选股 StockBuddy MCP 客户端(OAuth Bearer,82 工具,data_* 系列)。
+
+    无状态(无 mcp-session-id);响应为 SSE(id:/data: 行),必须
+    resp.content.decode('utf-8') 后按行取 data:(与 SW MCP 同款 SSE 坑)。
+    401 时自动调 westock_renew_token() 重铸后重试一次。
+    """
+
+    def __init__(self):
+        self.url = os.environ.get("WESTOCK_MCP_URL", WESTOCK_MCP_URL)
+        self.token = os.environ.get("WESTOCK_ACCESS_TOKEN", "")
+
+    def call(self, tool: str, arguments: dict = None, timeout: int = 60) -> list:
+        """调 tools/call,返回全部 text block 列表(isError 时抛 RuntimeError)。"""
+        import requests as _rq
+        headers = {"Authorization": f"Bearer {self.token}",
+                   "Content-Type": "application/json",
+                   "Accept": "application/json, text/event-stream"}
+        payload = {"jsonrpc": "2.0", "id": 1, "method": "tools/call",
+                   "params": {"name": tool, "arguments": arguments or {}}}
+        resp = _rq.post(self.url, headers=headers, json=payload, timeout=timeout)
+        if resp.status_code == 401:
+            logger.info("westock 401 → 尝试 fskey 自动续期")
+            new = westock_renew_token()
+            if new:
+                self.token = new
+                headers["Authorization"] = f"Bearer {new}"
+                resp = _rq.post(self.url, headers=headers, json=payload, timeout=timeout)
+        resp.raise_for_status()
+        for line in resp.content.decode("utf-8", errors="replace").split("\n"):
+            if line.startswith("data:"):
+                rj = json.loads(line[5:].strip())
+                if rj.get("error"):
+                    raise RuntimeError(f"westock MCP error: {rj['error']}")
+                result = rj.get("result", {})
+                texts = [c.get("text", "") for c in result.get("content", []) or []
+                         if c.get("type") == "text"]
+                if result.get("isError"):
+                    raise RuntimeError(f"westock MCP isError: {''.join(texts)[:200]}")
+                return texts
+        raise RuntimeError(f"westock MCP 响应无 data: 行: {resp.content[:120]!r}")
+
+
+def westock_renew_token() -> str:
+    """用 .env 里的 WESTOCK_FSKEY 登录会话重铸 access_token(~100h,无 refresh_token)。
+
+    fskey 是用户浏览器一次登录换来的会话密钥,可反复铸 code→token;fskey 失效时
+    返回空串 → 需人工重授权(浏览器开 authorize 链接后从地址栏取回新 fskey/openid)。
+    成功则更新 os.environ 并就地回写 .env(保持 600 权限)。
+    """
+    import requests as _rq
+    import hashlib as _hl
+    import base64 as _b64
+    import secrets as _sec
+    from urllib.parse import urlencode as _uenc
+    from fmdata.config import FMDATA_DIR
+    cid = os.environ.get("WESTOCK_CLIENT_ID", "")
+    fskey = os.environ.get("WESTOCK_FSKEY", "")
+    openid = os.environ.get("WESTOCK_OPENID", "")
+    ru = "workbuddy://workbuddy/mcp/connector:fmdata/oauth/callback"
+    if not (cid and fskey and openid):
+        logger.warning("westock 续期缺 WESTOCK_CLIENT_ID/FSKEY/OPENID")
+        return ""
+    verifier = _sec.token_urlsafe(64)[:128]
+    challenge = _b64.urlsafe_b64encode(_hl.sha256(verifier.encode()).digest()).rstrip(b"=").decode()
+    state = _sec.token_urlsafe(8)
+    auth = ("https://stockbuddy.qq.com/cgi/cgi-bin/openai/mcp/oauth/authorize?" + _uenc({
+        "response_type": "code", "client_id": cid, "redirect_uri": ru,
+        "code_challenge": challenge, "code_challenge_method": "S256",
+        "scope": "read write", "state": state,
+        "from": "workbuddy", "ref": "web", "openid": openid,
+        "fskey": fskey, "check": "11", "consent": "1"}))
+    d = _rq.get(auth, timeout=30).json()
+    if not d.get("code"):
+        logger.warning(f"westock 续期失败(authorize 无 code): {str(d)[:150]}")
+        return ""
+    t = _rq.post("https://stockbuddy.qq.com/cgi/cgi-bin/openai/mcp/oauth/token", data={
+        "grant_type": "authorization_code", "code": d["code"], "redirect_uri": ru,
+        "client_id": cid, "code_verifier": verifier}, timeout=30).json()
+    tok = t.get("access_token", "")
+    if not tok:
+        logger.warning(f"westock 续期失败(token 空): {str(t)[:150]}")
+        return ""
+    os.environ["WESTOCK_ACCESS_TOKEN"] = tok
+    try:
+        env_path = FMDATA_DIR / ".env"
+        lines = env_path.read_text().splitlines()
+        out, seen = [], False
+        for ln in lines:
+            if ln.startswith("WESTOCK_ACCESS_TOKEN="):
+                out.append(f"WESTOCK_ACCESS_TOKEN={tok}")
+                seen = True
+            else:
+                out.append(ln)
+        if not seen:
+            out.append(f"WESTOCK_ACCESS_TOKEN={tok}")
+        env_path.write_text("\n".join(out) + "\n")
+        logger.info("westock token 已续期并回写 .env")
+    except Exception as e:
+        logger.warning(f"westock .env 回写失败(仅进程内生效): {e}")
+    return tok
+
+
+class _WestockMcpClient:
+    """腾讯自选股 StockBuddy MCP 客户端(OAuth Bearer;82 工具,实时/盘后快照语义)。
+
+    服务端无 mcp-session-id(无状态);响应为 SSE(id:/data: 行),须按行取 data: 前缀
+    (utf-8 显式解码)。401 时自动用 fskey 重铸 token 并重试一次。
+    """
+
+    def __init__(self, token: str = ""):
+        self.url = os.environ.get("WESTOCK_MCP_URL", WESTOCK_MCP_URL)
+        self.token = token or os.environ.get("WESTOCK_ACCESS_TOKEN", "")
+
+    def call(self, tool: str, arguments: dict = None, timeout: int = 60) -> list:
+        """返回 content 文本块列表;MCP error/isError 抛 RuntimeError。"""
+        import requests as _rq
+        headers = {"Authorization": f"Bearer {self.token}",
+                   "Content-Type": "application/json",
+                   "Accept": "application/json, text/event-stream"}
+        payload = {"jsonrpc": "2.0", "id": 1, "method": "tools/call",
+                   "params": {"name": tool, "arguments": arguments or {}}}
+        for attempt in (1, 2):
+            resp = _rq.post(self.url, headers=headers, json=payload, timeout=timeout)
+            if resp.status_code == 401 and attempt == 1:
+                new = westock_renew_token()
+                if new:
+                    self.token = new
+                    headers["Authorization"] = f"Bearer {new}"
+                    continue
+            resp.raise_for_status()
+            break
+        for line in resp.content.decode("utf-8", errors="replace").split("\n"):
+            if line.startswith("data:"):
+                rj = json.loads(line[5:].strip())
+                if rj.get("error"):
+                    raise RuntimeError(f"westock MCP error: {rj['error']}")
+                result = rj.get("result", {})
+                texts = [c.get("text", "") for c in result.get("content", []) or []
+                         if c.get("type") == "text"]
+                if result.get("isError"):
+                    raise RuntimeError(f"westock MCP isError: {''.join(texts)[:200]}")
+                return texts
+        raise RuntimeError(f"westock MCP 响应无 data: 行: {resp.content[:120]!r}")
+
+
 class RecipeFetcher:
     """Execute recipes to fetch or update datasets on-demand."""
 
@@ -332,6 +540,8 @@ class RecipeFetcher:
                 return self._fetch_eastmoney_mx(name, recipe, fetch_cfg)
             elif source == "sw_mcp":
                 return self._fetch_sw_mcp(name, recipe, fetch_cfg)
+            elif source == "westock_mcp":
+                return self._fetch_westock_mcp(name, recipe, fetch_cfg)
             else:
                 return {"status": "error", "message": f"unknown source: {source}"}
         except Exception as e:
@@ -633,6 +843,65 @@ class RecipeFetcher:
         extra = {"actual_month_end": sorted(actual)} if func == "factor_value" else {}
         logger.info(f"saved {name}: {len(df)} rows (wide) to {output_path}")
         return {"status": "ok", "rows": len(df), "file": str(output_path), **extra}
+
+    def _fetch_westock_mcp(self, name: str, recipe: dict, fetch_cfg: dict) -> dict:
+        """腾讯自选股 StockBuddy MCP 透传桥(OAuth Bearer;82 工具)。
+
+        实时/盘后快照语义,无 as-of 保证 → 🔴禁回测/PIT,仅 ad-hoc 与盘中监控。
+        常用:data_quote(实时行情,沪深港美)/data_kline/data_minute/data_consensus
+        (一致预期)/data_lhb/data_fund_flow/data_sector/data_industry_chain。
+        fetch.func=工具名,fetch.params 直传参数(codes 逗号分隔);POST body 传参勿改 YAML。
+        输出:列表型响应(nodes/items)→宽表;dict 型→长表(tool,entity,key,value)。
+        """
+        params = dict(fetch_cfg.get("params") or {})
+        # POST body 的 params 逐键覆盖 YAML(与 factor_query 直传语义一致)
+        params.update(getattr(self, "params_override", None) or {})
+        tool = params.pop("tool", "") or fetch_cfg.get("func", "data_quote")
+        if not os.environ.get("WESTOCK_ACCESS_TOKEN"):
+            return {"status": "error", "message": "WESTOCK_ACCESS_TOKEN 未配置(~/fmdata/.env)"}
+        cli = _WestockMcpClient()
+        timeout = fetch_cfg.get("timeout", 60)
+        logger.info(f"westock_query {name}: tool={tool} params={params}")
+        try:
+            texts = cli.call(tool, params, timeout=timeout)
+        except Exception as e:
+            return {"status": "error", "message": f"westock MCP 调用失败: {e}"}
+        long_rows, wide_rows = [], []
+        for raw in texts:
+            try:
+                parsed = json.loads(raw)
+            except Exception:
+                long_rows.append({"tool": tool, "entity": "(raw)", "key": "text", "value": raw})
+                continue
+            data = parsed.get("data", parsed) if isinstance(parsed, dict) else parsed
+            if isinstance(data, dict) and isinstance(data.get("nodes"), list):
+                for node in data["nodes"]:
+                    if isinstance(node, dict):
+                        wide_rows.append({"tool": tool, **node})
+            elif isinstance(data, list):
+                for item in data:
+                    if isinstance(item, dict):
+                        wide_rows.append({"tool": tool, **item})
+            elif isinstance(data, dict):
+                for k, v in data.items():
+                    if isinstance(v, dict):
+                        for k2, v2 in v.items():
+                            long_rows.append({"tool": tool, "entity": k, "key": k2, "value": v2})
+                    else:
+                        long_rows.append({"tool": tool, "entity": "", "key": k, "value": v})
+        if wide_rows:
+            df = pd.DataFrame(wide_rows)
+        elif long_rows:
+            df = pd.DataFrame(long_rows, columns=["tool", "entity", "key", "value"])
+        else:
+            return {"status": "error", "message": f"westock 响应无可解析数据: {str(texts)[:200]}"}
+        output_path = STORE_DIR / recipe.get("file", f"westock/{name}.csv")
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = output_path.with_suffix(".csv.tmp")
+        df.to_csv(tmp, index=False)
+        tmp.rename(output_path)
+        logger.info(f"saved {name}: {len(df)} rows to {output_path}")
+        return {"status": "ok", "rows": len(df), "file": str(output_path)}
 
     def _fetch_agent(self, name: str, recipe: dict, fetch_cfg: dict) -> dict:
         """Execute an agent recipe using the script allowlist (no shell=True)."""

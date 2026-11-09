@@ -1,0 +1,12 @@
+name: westock_query
+category: market
+description: "腾讯自选股 StockBuddy MCP 透传桥(OAuth Bearer;实时/盘后快照语义,🔴禁回测/PIT)。POST /fetch/westock_query 触发,body 直传 {params:{tool:..., ...工具参数}};响应展平为 CSV(列表型宽表/dict 型长表)。默认 data_quote 实时行情(沪深港美,A股实时/美股延盘)。常用 82 工具:data_quote 实时行情/data_kline/data_minute/data_consensus 机构一致预期/data_lhb 龙虎榜/data_fund_flow 资金流/data_sector 板块/data_industry_chain 产业链/data_rating 评级/data_report 研报/data_news 资讯/data_north_holding 北向/tool_filter 条件选股。代码格式 sh600000/hk00700/usAAPL.OQ。token 由 fskey 自动续期,失效需人工重授权。"
+file: westock/westock_query.csv
+source: westock_mcp
+_auto_fetch: false
+update_freq: ondemand
+fetch:
+  func: data_quote
+  params:
+    codes: "sh600000,hk00700"
+  timeout: 60
