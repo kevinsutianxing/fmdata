@@ -336,6 +336,59 @@ def build_pack():
             "rows": rows.to_dict(orient="records")[:20],
         }
 
+    @guard("judgments")
+    def _judgments():
+        """P0-3(2026-11-11): 晨会默认判断层 — 数据同侧规则推导(模板非LLM), 每条带结构化
+        事实引用(metric_id/口径/观测日/来源)。首屏≤3条: 短线情绪/资金方向/技术形态广度。"""
+        J = []
+        # ── 判断1 短线情绪(T-0本地) ──
+        loc = blocks.get("recap_local") or {}
+        me, lu, lb = loc.get("money_effect"), loc.get("limit_up"), loc.get("limit_broken")
+        prev_lu = ((loc.get("trend") or [{}])[-2:] or [{}])[0].get("limit_up")
+        if me is not None and lu:
+            br = round(100 * (lb or 0) / max(lu, 1), 1)
+            tone = "升温" if (me >= 0 and (prev_lu is None or lu >= prev_lu)) else ("情绪高位但涨停收缩" if me >= 0 else "退潮")
+            J.append({"id": "J1", "scope": "短线情绪（适用: 1-3个交易日）",
+                "conclusion": f"短线情绪{tone}：涨停{lu}家（前日{prev_lu}），赚钱效应{me:+.2f}%，最高{loc.get('max_boards')}板，炸板率{br}%",
+                "evidence": [
+                    {"metric_id": "cn.limit_up", "label": "涨停家数", "value": lu, "unit": "家", "observation_date": loc.get("as_of"), "source_id": "tushare.limit_list_d", "method": "当日U类计数"},
+                    {"metric_id": "cn.money_effect", "label": "赚钱效应", "value": me, "unit": "%", "observation_date": loc.get("as_of"), "source_id": "fmdata.daily_matrix", "method": "前日涨停股今日昨收涨幅算术均(与东吴同口径)"},
+                    {"metric_id": "cn.limit_broken_ratio", "label": "炸板率", "value": br, "unit": "%", "observation_date": loc.get("as_of"), "source_id": "tushare.limit_list_d", "method": "Z/(U+Z)"}],
+                "counter": (f"炸板率{br}%≥15%：情绪高位但分歧加大，涨停质量需甄别" if br >= 15 else "若明日赚钱效应转负且涨停数收缩，视为退潮信号")})
+        # ── 判断2 资金方向(T-1东吴) ──
+        ind = blocks.get("industry_flow") or {}
+        d5 = (ind.get("top_in_5d") or [])[:3]
+        nd = ind.get("n_days") or 0
+        if d5:
+            names = "、".join(f"{r['industry']}{r['amount_yi']:+.0f}亿" for r in d5)
+            w20ok = nd >= 20
+            J.append({"id": "J2", "scope": "资金方向（适用: 1-2周）",
+                "conclusion": f"短期资金集中流入：5观测日均净流入前列 {names}" + ("" if w20ok else f"；20观测均线窗口不足({nd}/20)，中期转向暂不判定"),
+                "evidence": [{"metric_id": "cn.ind_flow_5d_avg_top", "label": f"{r['industry']} 5日均", "value": r["amount_yi"], "unit": "亿元/日",
+                              "observation_date": ind.get("as_of"), "source_id": "soochow.industry_flow", "method": "近5交易日净流入和/5(本地逐日累积)"} for r in d5]
+                + [{"metric_id": "cn.flow_window", "label": "20观测窗口", "value": f"{nd}/20", "unit": "交易日",
+                    "observation_date": ind.get("as_of"), "source_id": "local.accumulated", "method": "本地逐日累积天数"}],
+                "counter": "ETF申赎与行业流向口径不同源，方向冲突时以价格与成交验证"})
+        # ── 判断3 技术形态广度(D+1 SW) ──
+        pm = blocks.get("pattern_map") or {}
+        if pm.get("stocks_scanned"):
+            bull, bear = pm.get("bullish") or 0, pm.get("bearish") or 0
+            bc, bec = pm.get("bullish_confirmed") or 0, pm.get("bearish_confirmed") or 0
+            share = round(100 * bull / max(bull + bear, 1))
+            J.append({"id": "J3", "scope": "技术形态广度（适用: 2-6周）",
+                "conclusion": f"全市场形态结构偏{'多' if share >= 50 else '空'}：看多形态{bull}只({share}%) vs 看空{bear}只；突破确认 多{bc} vs 空{bec}" + ("——与短线情绪方向背离，广度未确认情绪" if (share < 45 and (loc.get('money_effect') or 0) > 0) else ""),
+                "evidence": [
+                    {"metric_id": "sw.pattern.bullish", "label": "看多形态", "value": bull, "unit": "只", "observation_date": pm.get("data_date"), "source_id": "sw.pattern_map", "method": "经典形态主归类计数"},
+                    {"metric_id": "sw.pattern.bearish", "label": "看空形态", "value": bear, "unit": "只", "observation_date": pm.get("data_date"), "source_id": "sw.pattern_map", "method": "同上"},
+                    {"metric_id": "sw.pattern.confirmed", "label": "突破确认(多/空)", "value": f"{bc}/{bec}", "unit": "只", "observation_date": pm.get("data_date"), "source_id": "sw.pattern_map", "method": "含突破确认子集"}],
+                "counter": "形态广度为月频级结构信号，不预测单日涨跌；与短线情绪背离时以成交额与指数位置仲裁"})
+        # ── 持续风险与数据缺口(默认显示) ──
+        risks = []
+        if loc.get("as_of"): risks.append(f"盘面硬数字 T-0({loc['as_of']})；东吴复盘滞后1-2交易日；SW形态 D+1({pm.get('data_date')})——三层数据日不同步为常态")
+        if nd and nd < 20: risks.append(f"资金流20观测窗口 {nd}/20（东吴Excel 10日窗口+本地累积），20日均线逐日解锁")
+        if not J: return {"status": "EMPTY", "note": "本期未形成新增判断", "risks": risks}
+        return {"status": "OK", "judgments": J[:3], "risks": risks}
+
     return {"pack_version": PACK_VERSION, "built_at": now_cst(),
             "blocks": blocks, "errors": errors}
 
