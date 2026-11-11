@@ -80,17 +80,16 @@ def build_pack():
         if len(dates_all) >= 2:
             prev = dates_all[-2]
             prev_u = lim[(lim["trade_date"] == prev) & (lim["limit_type"] == "U")]["ts_code"]
-            # P0-2(2026-11-11)涨幅源修正: 弃用 soochow timing 的 chg(非涨跌幅口径,曾致 6.88 vs 东吴 4.92 冲突);
-            # 改用 fmdata /market/daily-matrix 标准日线 pct_chg — 复算 11-09/11-10 得 4.17/4.91,
-            # 与东吴官方 4.17/4.92 双日对齐(口径=前日涨停股今日昨收涨幅算术均)。
-            import urllib.request as _url
-            _dm = json.loads(_url.urlopen("http://127.0.0.1:1934/market/daily-matrix", timeout=180).read())["data"]
-            _dm = pd.DataFrame(_dm)
-            _dm["trade_date"] = _dm["trade_date"].astype(str)
-            m = _dm[_dm["trade_date"] == d]
-            m = m[m["ts_code"].isin(set(prev_u))]["pct_chg"]
-            if len(m) >= 5:
-                money_effect = round(float(m.mean()), 2)
+            # P0-2 涨幅源: 前日涨停股今日昨收涨幅算术均(tushare 标准 pct_chg, 与东吴官方
+            # 双日对齐 4.17/4.91 vs 4.17/4.92)。🔴2026-11-12 改 fetch 时算好落盘
+            # (fetch_ashare_market_brief.py compute_money_effect)——pack 只读本地 CSV,
+            # 不再同步调 /market/daily-matrix(曾致 recap_local 整块 TimeoutError 死掉)。
+            _me_path = ROOT / "market/ashare_money_effect.csv"
+            if _me_path.exists():
+                _me = pd.read_csv(_me_path, dtype={"date": str})
+                _me = _me[_me["date"] == d]
+                if len(_me) and pd.notna(_me.iloc[0]["money_effect"]):
+                    money_effect = float(_me.iloc[0]["money_effect"])
         ladder = [{"stock": r["name"], "boards": int(r["lt"]),
                    "theme": r.get("industry") or "", "note": ""}
                   for _, r in u.nlargest(8, "lt").iterrows()]
@@ -346,8 +345,8 @@ def build_pack():
         me, lu, lb = loc.get("money_effect"), loc.get("limit_up"), loc.get("limit_broken")
         prev_lu = ((loc.get("trend") or [{}])[-2:] or [{}])[0].get("limit_up")
         if me is not None and lu:
-            br = round(100 * (lb or 0) / max(lu, 1), 1)
-            tone = "升温" if (me >= 0 and (prev_lu is None or lu >= prev_lu)) else ("情绪高位但涨停收缩" if me >= 0 else "退潮")
+            br = round(100 * (lb or 0) / max((lu or 0) + (lb or 0), 1), 1)
+            tone = "升温" if (me >= 0 and (prev_lu is None or lu >= prev_lu)) else ("高位但涨停收缩" if me >= 0 else "退潮")
             J.append({"id": "J1", "scope": "短线情绪（适用: 1-3个交易日）",
                 "conclusion": f"短线情绪{tone}：涨停{lu}家（前日{prev_lu}），赚钱效应{me:+.2f}%，最高{loc.get('max_boards')}板，炸板率{br}%",
                 "evidence": [
