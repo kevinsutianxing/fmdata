@@ -170,8 +170,11 @@ def build_pack():
             s = s.dropna().sort_values(ascending=False)
             return [{"industry": k, "amount_yi": round(float(v), 2)}
                     for k, v in s.head(n).items()]
+        daily = {ind: [{"date": d, "net": round(float(v), 2)}
+                      for d, v in zip(g["data_date"], g[col1d]) if pd.notna(v)]
+                 for ind, g in df.groupby("申万一级行业")}
         return {
-            "as_of": as_of,
+            "as_of": as_of, "n_days": len(dates), "daily": daily,
             "top_in_1d": topn(base), "top_out_1d": topn(-base),
             "top_in_20d": topn(roll[20]["sum"]), "top_out_20d": topn(-roll[20]["sum"]),
             "win20_ndays": roll[20]["ndays"], "win5_ndays": roll[5]["ndays"],
@@ -194,6 +197,13 @@ def build_pack():
         base = cur.set_index(name_col)[col1d].astype(float)
         s5 = (df[df["data_date"].isin(dates[-5:])]
               .groupby(name_col)[col1d].sum())
+        s20 = (df[df["data_date"].isin(dates[-min(20, len(dates)):])]
+               .groupby(name_col)[col1d].sum())
+        pick = (set(s20.abs().sort_values(ascending=False).head(14).index)
+                | set(s5.abs().sort_values(ascending=False).head(8).index))
+        daily = {nm: [{"date": d, "net": round(float(v), 2)}
+                      for d, v in zip(g["data_date"], g[col1d]) if pd.notna(v)]
+                 for nm, g in df[df[name_col].isin(pick)].groupby(name_col)}
         def topn(s, n=N_TOP):
             s = s.dropna().sort_values(ascending=False)
             return [{"etf": k, "amount_yi": round(float(v), 2)}
@@ -202,10 +212,14 @@ def build_pack():
         agg = pd.read_csv(ROOT / "soochow/soochow_etf_flow_agg.csv")
         agg_dates = sorted(agg["data_date"].unique())
         a = agg[agg["data_date"] == agg_dates[-1]].copy()
+        # 权益口径: 指数聚合同样只留 股票型/跨境(修债券指数如中证短融混入权益榜)
+        if "投资类型(一级分类)" in a.columns:
+            a = a[a["投资类型(一级分类)"].isin(eq_types)].copy()
         a20 = a[["跟踪指数名称", "近20个交易日净流入额(亿元)"]].dropna()
         a20 = a20.sort_values("近20个交易日净流入额(亿元)", ascending=False)
         return {
             "as_of": as_of, "agg_as_of": agg_dates[-1],
+            "n_days": len(dates), "daily": daily,
             "top_in_1d": topn(base), "top_out_1d": topn(-base),
             "top_in_5d": topn(s5),
             "index_agg_20d_top": [{"index": r["跟踪指数名称"],
