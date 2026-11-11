@@ -80,11 +80,17 @@ def build_pack():
         if len(dates_all) >= 2:
             prev = dates_all[-2]
             prev_u = lim[(lim["trade_date"] == prev) & (lim["limit_type"] == "U")]["ts_code"]
-            ts = pd.read_csv(ROOT / "soochow/soochow_timing_section.csv")
-            ts = ts[(ts["board"] == "全A") & (ts["date"] == f"{d[:4]}-{d[4:6]}-{d[6:8]}")]
-            m = ts[ts["code"].isin(set(prev_u))]["chg"]
+            # P0-2(2026-11-11)涨幅源修正: 弃用 soochow timing 的 chg(非涨跌幅口径,曾致 6.88 vs 东吴 4.92 冲突);
+            # 改用 fmdata /market/daily-matrix 标准日线 pct_chg — 复算 11-09/11-10 得 4.17/4.91,
+            # 与东吴官方 4.17/4.92 双日对齐(口径=前日涨停股今日昨收涨幅算术均)。
+            import urllib.request as _url
+            _dm = json.loads(_url.urlopen("http://127.0.0.1:1934/market/daily-matrix", timeout=180).read())["data"]
+            _dm = pd.DataFrame(_dm)
+            _dm["trade_date"] = _dm["trade_date"].astype(str)
+            m = _dm[_dm["trade_date"] == d]
+            m = m[m["ts_code"].isin(set(prev_u))]["pct_chg"]
             if len(m) >= 5:
-                money_effect = round(float(m.mean()) * 100, 2)
+                money_effect = round(float(m.mean()), 2)
         ladder = [{"stock": r["name"], "boards": int(r["lt"]),
                    "theme": r.get("industry") or "", "note": ""}
                   for _, r in u.nlargest(8, "lt").iterrows()]
