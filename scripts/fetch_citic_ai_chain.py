@@ -67,6 +67,9 @@ def main():
 
     (STORE / "citic_ai_chain_raw.json").write_text(
         json.dumps(d, ensure_ascii=False), encoding="utf-8")
+    # 日期化原始存档(PIT 溯源: 每日一份当日视图, ~350KB/日)
+    (STORE / f"citic_ai_chain_raw_{gen_day}.json").write_text(
+        json.dumps(d, ensure_ascii=False), encoding="utf-8")
 
     # 信用长表
     out = []
@@ -96,6 +99,26 @@ def main():
         for b in bonds:
             f.write(",".join(str(b.get(k, "")) for k in
                     ("asof", "co", "isin", "maturity", "coupon", "ytd", "latest", "change")) + "\n")
+
+    # 全量序列铺平: 元数据表 + 长表(155 组, 任何 agent 可查)
+    with open(STORE / "citic_ai_series_meta.csv", "w", newline="", encoding="utf-8") as f:
+        f.write("key,name,unit,freq,source,chart,style,sort_i\n")
+        for s in (d.get("series") or []):
+            f.write(",".join(str(s.get(k, "")).replace(",", ";") for k in
+                    ("key", "name", "unit", "freq", "source", "chart", "style", "sort_i")) + "\n")
+    n_long = 0
+    with open(STORE / "citic_ai_series_long.csv", "w", newline="", encoding="utf-8") as f:
+        f.write("key,date,value\n")
+        for k, s in sorted(data.items()):
+            if not isinstance(s, dict):
+                continue
+            dates_l = s.get("dates") or []
+            vals_l = s.get("values") or s.get("vals") or []
+            for dt, v in zip(dates_l, vals_l):
+                if v is None:
+                    continue
+                f.write(f"{k},{dt},{v}\n")
+                n_long += 1
 
     need_header = not meta_p.exists() or meta_p.stat().st_size == 0
     with open(meta_p, "a", encoding="utf-8") as f:
