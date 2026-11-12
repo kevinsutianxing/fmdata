@@ -362,7 +362,7 @@ def build_pack():
             names = "、".join(f"{r['industry']}{r['amount_yi']:+.0f}亿" for r in d5)
             w20ok = nd >= 20
             J.append({"id": "J2", "scope": "资金方向（适用: 1-2周）",
-                "conclusion": f"短期资金集中流入：近{len((ind.get('daily') or {}).get(d5[0]['industry'], [])) and 5}个交易日累计净流入前列 {names}" + ("" if w20ok else f"；20观测均线窗口不足({nd}/20)，中期转向暂不判定"),
+                "conclusion": f"短期资金集中流入：近5个交易日累计净流入前列 {names}" + ("" if w20ok else f"；20观测均线窗口不足({nd}/20)，中期转向暂不判定"),
                 "evidence": [{"metric_id": "cn.ind_flow_5d_sum_top", "label": f"{r['industry']} 5日累计", "value": r["amount_yi"], "unit": "亿元",
                               "observation_date": ind.get("as_of"), "source_id": "soochow.industry_flow", "method": "近5交易日净流入累计和(本地逐日累积)"} for r in d5]
                 + [{"metric_id": "cn.flow_window", "label": "20观测窗口", "value": f"{nd}/20", "unit": "交易日",
