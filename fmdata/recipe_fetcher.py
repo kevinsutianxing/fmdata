@@ -48,6 +48,8 @@ AGENT_SCRIPT_ALLOWLIST = {
     "fetch_av_earnings": "/home/ubuntu/fmdata/store/scripts/fetch_av_earnings.py",
     # FMP /stable 三件: 财报日历/分析师预估/季度三表 (2026-11-07, 免费档250/天)
     "fetch_fmp": "/home/ubuntu/fmdata/store/scripts/fetch_fmp.py",
+    # HK 日线增量 00700/09988(ifzq 主源+westock bfq 备源,2026-11-09 迁出 tushare hk_daily 配额)
+    "fetch_hk_daily_incremental": "/home/ubuntu/fmdata/scripts/fetch_hk_daily_incremental.py",
     "fetch_etf_flows": "/home/ubuntu/fmdata/store/scripts/fetch_etf_flows.py",
     # 海外美股快照 (eastmoney push2his + QG 代理池)
     "fetch_us_stock_spot": "/home/ubuntu/fmdata/store/scripts/fetch_us_stock_spot.py",
@@ -75,6 +77,8 @@ AGENT_SCRIPT_ALLOWLIST = {
     # global-volatility-risk-monitor 补源 (2026-11-07): 五指数 em kline+datacenter / USDCNY中间价 cjpy
     "fetch_index_global_monitor": "/home/ubuntu/fmdata/scripts/fetch_index_global_monitor.py",
     "fetch_usdcny_parity": "/home/ubuntu/fmdata/scripts/fetch_usdcny_parity.py",
+    # 美股个股/ETF日线 (东财 hfq全史重定基qfq锚, 2026-11-12): GVRM 美股主源, 救CBOE delayed滞后
+    "fetch_us_equity_kline": "/home/ubuntu/fmdata/scripts/fetch_us_equity_kline.py",
     # CFFEX IO/MO ATM IV 期限结构 (tushare opt_daily 结算价 + Black-76, 2026-11-07): GVRM CFFEX_IO/MO
     "fetch_cffex_atm_iv": "/home/ubuntu/fmdata/scripts/fetch_cffex_atm_iv.py",
     # 个股/ETF IV surface (Cboe 延迟期权链快照, 2026-11-07): monitor 最后数据缺口

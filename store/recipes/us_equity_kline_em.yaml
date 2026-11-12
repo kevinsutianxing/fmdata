@@ -1,0 +1,11 @@
+category: overseas
+description: '美股个股/ETF日线(东财push2his fqt=2 hfq全史重定基为锚定今天的前复权,36标的): EOD当日北京午后即有,救CBOE
+  delayed charts偶发次日才发日K; 全史单call; 每日全量重拉(qfq锚随除权整体重写)~2-4min已摘出06:00批,专用cron 06:15/15:35'
+fetch:
+  command: python3 /home/ubuntu/fmdata/scripts/fetch_us_equity_kline.py
+  func: agent
+  timeout: 600
+file: market/us_equity_kline_em.csv
+name: us_equity_kline_em
+source: agent
+update_freq: daily

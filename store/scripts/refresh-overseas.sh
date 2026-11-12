@@ -13,7 +13,9 @@ ts() { date '+%Y-%m-%d %H:%M:%S'; }
 # 收集所有 overseas recipe（排除 _ak/_bak/_alt 备份）
 mapfile -t DATASETS < <(grep -lE '^category:\s*overseas' "${RECIPES}"/*.yaml 2>/dev/null \
   | xargs -I{} basename {} .yaml 2>/dev/null \
-  | grep -vE '_(ak|bak|alt)$' | sort -u)
+  | grep -vE '_(ak|bak|alt)$' | sort -u   | grep -vE '^us_stock_spot$' \
+  | grep -vE '^cboe_iv_surface$' \
+  | grep -vE '^us_equity_kline_em$')  # 20260929 摘出 us_stock_spot(东财指纹敏感改独立时段单跑); 20261107 摘出 cboe_iv_surface(weekly 已有周六06:07专用cron, 日批重复全量下载且周六与其并发读写竞争); 20261112 摘出 us_equity_kline_em(GVRM美股主源, 增量+尾窗自校验/除权日单标的重锚, 平常日~4-5min,失败面隔离, 专用cron 06:15/15:25 直跑脚本)
 
 echo "[$(ts)] === overseas refresh START (${#DATASETS[@]} datasets) ===" >> "$LOG"
 ok=0; fail=0; failed=""
@@ -29,4 +31,9 @@ for ds in "${DATASETS[@]}"; do
   fi
 done
 echo "[$(ts)] === overseas refresh DONE: ok=$ok fail=$fail ===" >> "$LOG"
-[ $fail -gt 0 ] && echo "[$(ts)] failed:${failed}" >> "$LOG"
+# 2026-10-01 修退出码双向 bug:fail=0 时 && 短路返回 1 → 全成功误报;fail>0 时 echo 返回 0 → 真失败从不告警
+if [ "$fail" -gt 0 ]; then
+  echo "[$(ts)] failed:${failed}" >> "$LOG"
+  exit 1
+fi
+exit 0
