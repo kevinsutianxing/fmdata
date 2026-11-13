@@ -1,0 +1,11 @@
+name: moomoo_iv_history
+category: overseas
+description: "美股37标的+港股4标的 个股日频 IV+HV 历史时间序列(moomoo OpenD get_option_underlying_his_volatility, 富途官方口径; iv/hv=百分比, underlying_price=收盘价)。零成本实测通过(未入金账户即可用历史接口,实时深度才需问卷/付费)。🔴生产链在HK43: OpenD systemd服务(moomoo-opend, tailscale监听)+fetch_iv_history.py(~/moomoo-opend/)+cron 06:50周二~周六,跑完scp同步本文件; SZ81无moomoo_api包(/fetch在本机不可用,治理已跳过)。PIT注意: 历史值按需重拉,富途口径iv为当日收盘隐含波动率"
+file: market/moomoo_iv_history.csv
+source: agent
+update_freq: daily
+_auto_fetch: false
+fetch:
+  func: agent
+  command: "python3 /home/ubuntu/moomoo-opend/fetch_iv_history.py"
+  timeout: 600
