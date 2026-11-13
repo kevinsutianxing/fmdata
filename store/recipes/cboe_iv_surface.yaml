@@ -1,0 +1,10 @@
+name: cboe_iv_surface
+category: overseas
+description: "美股个股/ETF IV surface 快照 (Cboe 延迟期权链) — 37标的(30股+RUT+SPY/QQQ/IWM/SOXQ/SMH/XLK ETF), 到期桶30/60/90/180/365d × |delta|桶0.25/0.5/0.75 × C/P 的 IV 均值 + 顶层 iv30; 🔴延迟报价无历史→取数即冻结快照(raw json.gz 归档, observed_at=payload timestamp UTC), PIT 由归档构造; iv=Cboe报价侧年化IV非RV, FMDATA_PARAMS可传tickers子集"
+file: market/cboe_iv_surface/iv_surface_summary.csv
+source: agent
+update_freq: weekly
+fetch:
+  func: agent
+  command: "python3 /home/ubuntu/fmdata/store/scripts/fetch_cboe_iv_surface.py"
+  timeout: 1200
