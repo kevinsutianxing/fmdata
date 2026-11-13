@@ -16,7 +16,8 @@ if [ -z "$AKEY" ]; then
 fi
 
 DATASETS="news_market news_macro news_tech"
-FAIL=0
+FAIL=0    # 硬错误(error/parse_err/超时) — 真故障
+EMPTY=0   # status=empty — NewsAPI 免费版 ~24h 延迟撞 --days 1 窗口的慢性现象
 for ds in $DATASETS; do
   resp=$(curl -s --max-time 70 -X POST -H "X-API-Key: $AKEY" "${FMURL}/fetch/${ds}" 2>&1)
   status=$(echo "$resp" | python3 -c "import sys,json
@@ -30,11 +31,21 @@ try:
 except Exception:
     print('-')" 2>/dev/null)
   echo "[$ds] status=$status rows=$rows"
-  [ "$status" = "ok" ] || FAIL=$((FAIL+1))
+  if [ "$status" = "ok" ]; then
+    :
+  elif [ "$status" = "empty" ]; then
+    EMPTY=$((EMPTY+1))
+  else
+    FAIL=$((FAIL+1))
+  fi
 done
 
-if [ "$FAIL" -gt 0 ]; then
-  echo "WARNING: $FAIL/$({ echo $DATASETS | wc -w; }) news dataset(s) failed"
+# 2026-11-13: 历史 131 跑里 52 次至少 1 个 empty(40%),全部是免费版延迟、数据无真故障,
+# 旧逻辑把它们当失败 exit1 → cron 天天误报。现在 empty 只记日志;
+# 硬错误或 3/3 全空(真断供)才 exit1 触发告警。
+if [ "$FAIL" -gt 0 ] || [ "$EMPTY" -eq 3 ]; then
+  echo "WARNING: error=$FAIL empty=$EMPTY/3 — news refresh 告警级失败"
   exit 1
 fi
-echo "news refresh done: all ok"
+[ "$EMPTY" -gt 0 ] && echo "NOTE: $EMPTY/3 news dataset(s) empty (NewsAPI 免费版~24h延迟,慢性非故障)"
+echo "news refresh done: ok=$((3-FAIL-EMPTY)) empty=$EMPTY error=$FAIL"

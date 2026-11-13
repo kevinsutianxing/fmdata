@@ -30,6 +30,25 @@ for ds in "${DATASETS[@]}"; do
     echo "[$(ts)] FAIL $ds: $status" >> "$LOG"
   fi
 done
+# 2026-11-13: 单源失败多为 QG 代理/FRED 瞬态(近12天5次单源挂、无一连续,次日自愈)
+# → 失败项歇 20s 单次重试再定生死,避免单源瞬态触发整批"refresh-overseas 失败"告警
+if [ "$fail" -gt 0 ]; then
+  echo "[$(ts)] retry pass (single):${failed}" >> "$LOG"
+  still=""
+  for ds in $failed; do
+    sleep 20
+    resp=$(curl -s -X POST -H "X-API-Key: $KEY" --max-time 90 "${FMDATA}/fetch/${ds}" 2>&1)
+    status=$(echo "$resp" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status','?'))" 2>/dev/null || echo "parse_fail")
+    if [ "$status" = "ok" ]; then
+      ok=$((ok+1)); fail=$((fail-1))
+      echo "[$(ts)] RETRY-OK $ds" >> "$LOG"
+    else
+      still="${still} ${ds}"
+      echo "[$(ts)] RETRY-FAIL $ds: $status" >> "$LOG"
+    fi
+  done
+  failed="$still"
+fi
 echo "[$(ts)] === overseas refresh DONE: ok=$ok fail=$fail ===" >> "$LOG"
 # 2026-10-01 修退出码双向 bug:fail=0 时 && 短路返回 1 → 全成功误报;fail>0 时 echo 返回 0 → 真失败从不告警
 if [ "$fail" -gt 0 ]; then
