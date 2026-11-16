@@ -22,7 +22,7 @@
 | # | 数据源 | 域 | 凭据位置 | 探活(11-09) | 配额/限制 | 续期方式 |
 |---|--------|-----|----------|:---:|-----------|----------|
 | 1 | tushare | 国内 | `~/fmdata/.env TUSHARE_TOKEN` | ✅ | 2000积分档；hk_daily 5次/天**已迁出日常用量**（2026-11-09 起增量走 ifzq/westock 免费源，配额全留深历史回填）；factor_value 1000次/天滚动窗 | 年付¥2000（因子库），2026-08 续 |
-| 2 | akshare + QG代理池1 | 国内 | `.env QG_PROXY_AUTHKEY/1` | ✅ | 余额制（2026-09-03 充值）；🔴裸连必封 IP | 余额耗尽时充值 |
+| 2 | akshare + QG代理池1 | 国内 | `.env QG_PROXY_AUTHKEY/1` | ✅ | 余额制（2026-09-03 充值）；🔴裸连必封 IP；**2026-11-16 减负：中债/上金所/sina 系 6 recipe 已切 proxy:direct（非东财主机不封数据中心 IP，实测直连稳定），performance_express 因消费者暂停降频 manual——日度代理调用 ~80%↓，现仅剩东财系刚需（us_stock_spot/china_bond_index/研报系）走池** | 余额耗尽时充值 |
 | 3 | QG代理池2 (kevinsu) | 国内 | `.env QG_PROXY_AUTHKEY_2` | ❌欠费 | BALANCE_INSUFFICIENT（09-03） | 闲置 fallback，不修 |
 | 4 | 妙想 MCP（东财） | 国内 | `.env EM_API_KEY` = CC `mx-ds-mcp` | ✅ | 官方认证 API | 长效，无到期 |
 | 4.5 | 中信前瞻AI产业链库 | 国内 | https://h97m3ln5.qwenwork.host/api/chart-data (公开JSON端点,机构订阅站) → SZ81 fetch_citic_ai_chain.py | ✅ | 每日1GET(源~11:49更新,礼节频率);155序列(LLM价格/ARR/GPU租赁/CDS/Z-Spread/期限结构)+长债; fmdata citic_ai_credit/citic_ai_bonds/citic_ai_series_long(155序列长表)/citic_ai_series_meta + 日期化PIT原始存档 + GVRM ai_credit键 | 免费(订阅站) |
@@ -87,6 +87,7 @@
 | 每日买点共振技术筛选 | **sw_tech_screen**(+meta; cron 19:05) | — | 服务端 limit 钳 20; GVRM晨会看板票池块 |
 | A股涨跌停/炸板清单(含连板数) | **ashare_limit_list**(tushare limit_list_d; 17:05+07:45) | — | GVRM晨会看板T-0盘面速览;🔴tushare盘后才有当日数据 |
 | 核心指数日度速览(涨跌幅+成交额) | **ashare_index_brief**(上证/深成/创业板/深综) | — | 同上;成交额=上证+深综合计 |
+| 中证500/1000 全历史指数日线 | **csi500_index_daily / csi1000_index_daily**(tushare index_daily, 积分内; governance 03:15 夜刷; 2026-11-16 建——起因 GVRM 日线监控消费 sw_index_daily(SW MCP 月刷)最长滞后 30 天; tushare vs SW 重叠 5305 天收盘相对差 0.00000000%) | sw_index_daily(深历史+HSI/SPX/IXIC/N225 保留, 月刷) | — |
 | 新闻/资讯 | NewsAPI 3 频道 / westock data_news | — | — |
 | 天软独有（per-meeting 等小众表） | cjpy MCP | — | 批量导出走 Python API 非 MCP |
 
