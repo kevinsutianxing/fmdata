@@ -1,7 +1,8 @@
 category: macro
-description: 人民币兑美元中间价(金十)
+description: 人民币中间价快照·外汇交易中心全币种(🔴2026-11-16语义变更:原金十历史序列的akshare函数已退役,现=当日快照;美元历史走macro_usdcny_boc)
 fetch:
-  func: macro_china_rmb
+  func: fx_spot_quote
+  params: {}
 file: macro/macro_rmb_mid.csv
 name: macro_rmb_mid
 source: akshare

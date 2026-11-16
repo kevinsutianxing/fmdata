@@ -722,6 +722,9 @@ class RecipeFetcher:
             return {"status": "error", "message": "SW_MCP_URL/SW_MCP_CODE 未配置(~/fmdata/.env)"}
         func = fetch_cfg.get("func", "factor_value")
         params = dict(fetch_cfg.get("params", {}))
+        # 2026-11-16 修: 合并 POST body override(westock 同款坑——不 merge 则
+        # factor_series 小窗口探针/按需点查的 ts_codes/start/end 全被吞)
+        params.update(getattr(self, "params_override", None) or {})
         timeout = fetch_cfg.get("timeout", 90)
         output_path = STORE_DIR / recipe.get("file", "factors/sw_factor_value.csv")
         output_path.parent.mkdir(parents=True, exist_ok=True)
