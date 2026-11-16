@@ -1,8 +1,9 @@
 name: performance_express
 category: fundamentals
-description: "业绩快报数据 - akshare stock_yjkb_em"
+description: '业绩快报数据 - akshare stock_yjkb_em | 2026-11-16: 消费者(业绩披露日报cron)暂停中,降频manual停日更省QG代理;日报重启前先换tushare
+  express(token已够)并适配列名'
 file: fundamentals/performance_express.csv
 source: akshare
-update_freq: daily
+update_freq: manual
 fetch:
   func: stock_yjkb_em

@@ -1,9 +1,11 @@
 category: market
 fetch:
-  func: stock_zh_index_daily
+  func: index_zh_daily_sina
   params:
     symbol: sh000832
+  proxy: direct
 file: market/csi_cb_index_ak.csv
 name: csi_cb_index_ak
 source: akshare
 update_freq: daily
+description: ' | 2026-11-16: stock_zh_index_daily改名→index_zh_daily_sina, 切直连(sina不封数据中心)'
