@@ -1,0 +1,12 @@
+category: market
+description: '中证1000(000852.SH)全历史日线(tushare index_daily,积分内;2026-11-16建: GVRM日线监控日度供给,深历史由sw_index_daily(SW
+  MCP,月刷)保留,tushare与SW收盘39/39交易日相对差0.0000%已互证)'
+fetch:
+  date_col: trade_date
+  func: index_daily
+  params:
+    ts_code: 000852.SH
+file: market/csi1000_index_daily.csv
+name: csi1000_index_daily
+source: tushare
+update_freq: daily
