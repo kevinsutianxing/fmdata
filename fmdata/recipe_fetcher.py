@@ -21,6 +21,7 @@ logger = logging.getLogger("fmdata.recipe_fetcher")
 # Maps script alias → absolute path.
 AGENT_SCRIPT_ALLOWLIST = {
     "refresh_sw_daily_full": "/home/ubuntu/fmdata/scripts/refresh_sw_daily_full.py",
+    "sync_gfclaw": "/data/gfclaw/scripts/sync_locked.py",
     "refresh_spot_snapshot": "/home/ubuntu/fmdata/scripts/refresh_spot_snapshot.py",
     "refresh_sw_data": "/home/ubuntu/fmdata/scripts/refresh_sw_data.py",
     "refresh_sw_fundamentals": "/home/ubuntu/fmdata/scripts/refresh_sw_fundamentals.py",

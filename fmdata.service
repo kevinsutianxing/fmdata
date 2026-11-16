@@ -5,7 +5,7 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-WorkingDirectory=/home/ubuntu/fmdata
+WorkingDirectory=/data/fmdata
 EnvironmentFile=/home/ubuntu/fmdata/.env
 # user-service deployment: system python3 + pip install --user (no .venv)
 ExecStart=/usr/bin/python3 -m uvicorn fmdata.research_server:app --host 127.0.0.1 --port 1934

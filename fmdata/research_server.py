@@ -305,6 +305,55 @@ def stock_deep_research(
     return json.loads(json.dumps(report, ensure_ascii=False, default=_np_safe))
 
 
+# ── gfclaw COS 数仓查询 (2026-11-15) ──────────────────────────────────
+# 91 表 Parquet 数仓(本地 /data/gfclaw), 与 /data 同姿态: localhost 免 key。
+# PIT: frozen_only=true 只读冻结分区(history/, 回测安全); 当月 current 层
+# 每日重刷禁入回测终值。清单 /gfclaw/tables, 字段中文含义随字典同步。
+
+
+@app.get("/gfclaw/tables")
+def gfclaw_tables(table: str | None = None) -> dict[str, Any]:
+    from fmdata import gfclaw_store
+
+    rows = gfclaw_store.tables_detail()
+    if table:
+        rows = [r for r in rows if r["table"] == table]
+        if not rows:
+            raise HTTPException(status_code=404, detail={"error": f"no such table: {table}"})
+    return {
+        "count": len(rows),
+        "root": str(gfclaw_store.GFCLAW_ROOT),
+        "query_hint": "/gfclaw/query?table=eq_quote_daily&start=2024-01-01&end=2024-02-01&frozen_only=true",
+        "tables": rows,
+    }
+
+
+@app.get("/gfclaw/query")
+def gfclaw_query(
+    table: str,
+    start: str | None = None,
+    end: str | None = None,
+    ticker_id: str | None = None,
+    columns: str | None = None,
+    frozen_only: bool = False,
+    limit: int = 1000,
+    date_col: str | None = None,
+) -> dict[str, Any]:
+    import json
+
+    from fmdata import gfclaw_store
+
+    cols = [c.strip() for c in columns.split(",") if c.strip()] if columns else None
+    try:
+        result = gfclaw_store.query(
+            table, columns=cols, start=start, end=end, ticker_id=ticker_id,
+            frozen_only=frozen_only, limit=limit, date_col=date_col,
+        )
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail={"error": str(e)})
+    return json.loads(json.dumps(result, ensure_ascii=False, default=str))
+
+
 # Preserve all existing fmdata routes. Research routes are registered first so
 # the root mount cannot shadow them.
 app.mount("/", legacy_app)
