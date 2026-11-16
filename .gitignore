@@ -37,3 +37,11 @@ build/
 .idea/
 incoming/
 logs/
+
+# 数据目录补漏（2026-11-16：存量入库时发现未覆盖）
+store/data/
+store/gfclaw/
+store/industry/
+store/research_export/
+store/westock/
+store/research_export_pull.log
