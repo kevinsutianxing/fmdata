@@ -14,6 +14,7 @@
 | **on-demand POST /fetch/{name}** | 全部 recipe | agent 按需 | 413/超时返回结构化错误 |
 | **静态登记**（source:static / _auto_fetch:false） | 一次性物化的小表 | 不自动 | 无（内容不变） |
 
+**🔴真值关系（排障勿误诊, 2026-11-16 立）**：`store/recipes/*.yaml` 是 fetch 命令的**唯一执行真值**（`load_recipe` 每请求读盘, 重启零回退）；`registry.json` 里 `datasets[].recipe` 只是**展示副本**（/recipes 列表用, server.py:325 只读不执行）——直接改 YAML 后副本会陈旧, 属展示滞后非回退风险, 同步方式见 registry.py:234 语义（`ds['recipe']=load_recipe(n)` 后 save_registry）。
 **红线**：recipe 注册走 `POST /recipes`（name/source/fetch 必填，agent/remote 源须 X-API-Key 且脚本在 `AGENT_SCRIPT_ALLOWLIST`）；新增日更源必须同步登记 inventory + 可见 SCRIPT_FED_HEARTBEATS（若脚本喂）。
 
 ## 二、查询机制矩阵（什么需求走什么路）
