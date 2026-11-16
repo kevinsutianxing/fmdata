@@ -490,7 +490,11 @@ async def fetch_dataset_endpoint(name: str, request: Request):
     except Exception:
         body_params = None
     from fmdata.recipe_fetcher import fetch_dataset as do_fetch
-    result = do_fetch(name, params_override=body_params)
+    # 2026-11-16 修: async 端点直调阻塞 fetch(subprocess/网络)会冻结事件循环——
+    # 一个卡住的 agent recipe 让整个 fmdata 连 /health 都无响应(实测 compute_industry_median
+    # 502 重试挂起 7 分钟全场死)。移入线程池, 单个慢 fetch 不再拖死服务。
+    from fastapi.concurrency import run_in_threadpool
+    result = await run_in_threadpool(do_fetch, name, params_override=body_params)
     # Business failure (allowlist rejection, upstream/proxy error, script crash) must NOT
     # return 2xx — otherwise status-code-only monitors see "200 OK" while data goes stale
     # for days (us_stock_spot silently failed 12 days this way, 2026-07-20→08-01).
