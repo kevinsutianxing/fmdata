@@ -818,23 +818,39 @@ def audit_daily_freshness(send_alert=True):
         log("  无法获取全量 status，跳过审计", "WARN")
         return []
     no_file = 0
+    # 上游节奏型月度源: 数据新鲜度由上游发布节奏决定, file-mtime 判定只会误报
+    # (sw_industry_pts=SW半年评审才变更, in_date max 2026-07-03 即最新;
+    #  report_rc_monthly=tushare report_rc 滞后>45d 实测, 2026-10 未发布属上游节奏)
+    UPSTREAM_PACED_MONTHLY = {"sw_industry_pts", "report_rc_monthly"}
+    # 2026-11-16: daily 走交易日感知门槛; weekly/monthly 按 freq 分档固定阈值
+    # (weekly 9d 容错=刷新窗 Sat/Sun+一周; monthly 45d=SW 服务端滞后可超 38d)
+    FREQ_FLOOR_H = {"daily": None, "weekly": 9 * 24, "monthly": 45 * 24}
     for name, info in recipes.items():
-        if info.get("update_freq") != "daily":
+        freq = info.get("update_freq")
+        if freq not in FREQ_FLOOR_H:
             continue
         # soochow 族走生产者心跳（见 SCRIPT_FED_HEARTBEATS 注释），跳过 file-mtime 判定
         if info.get("source") == "soochow_mcp":
             continue
+        # static 表设计上不自动刷新(analyst_eps_forecast 类历史锚定表), mtime 判定无意义
+        if info.get("source") == "static" or not info.get("_auto_fetch", True):
+            continue
+        if name in UPSTREAM_PACED_MONTHLY:
+            log(f"  ⏭ {name}: 上游节奏型月度源, 跳过 mtime 判定(内容新鲜度由上游决定)")
+            continue
         rel = status.get(name, {}).get("file", "")
         if not rel:
-            no_file += 1
+            if freq == "daily":
+                no_file += 1
             continue
         path = os.path.join(store, rel)
         checked += 1
         if not os.path.exists(path):
-            stale.append((name, None))  # 声称日更但文件都没有
+            stale.append((name, None))  # 声称有产出但文件都不存在
             continue
-        if os.path.getmtime(path) < floor:
-            stale.append((name, (now - os.path.getmtime(path)) / 3600))
+        _floor = floor if freq == "daily" else now - FREQ_FLOOR_H[freq] * 3600
+        if os.path.getmtime(path) < _floor:
+            stale.append((f"{name}({freq})", (now - os.path.getmtime(path)) / 3600))
 
     for label, (hb, max_h) in SCRIPT_FED_HEARTBEATS.items():
         checked += 1
