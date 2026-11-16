@@ -1,0 +1,10 @@
+name: cb_cashflows_pit
+category: market
+description: "可转债到期赎回/强赎公告现金流（Tushare cb_call，按公告可见日记录；不覆盖未到期券的募集说明书现金流）"
+file: market/cb_cashflows_pit.csv
+source: agent
+update_freq: daily
+fetch:
+  func: agent
+  command: "python3 /home/ubuntu/fmdata/scripts/fetch_cb_cashflows_pit.py"
+  timeout: 180

@@ -1,0 +1,7 @@
+name: etf_category_stats
+category: reference
+description: "中国ETF全市场战略研究(1757只含清盘127,无幸存者偏差)·品类突破统计:破10/20/50/100/300亿概率与达门槛中位月数(信用债86%破百亿最高,AI主题36只0破百亿)。快照截至2026-08-18(一次性研究快照,update=manual)"
+file: reference/etf_category_stats.csv
+source: static
+_auto_fetch: false
+update_freq: manual

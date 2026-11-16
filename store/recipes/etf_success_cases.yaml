@@ -1,0 +1,7 @@
+name: etf_success_cases
+category: reference
+description: "中国ETF全市场战略研究(1757只含清盘127,无幸存者偏差)·成功案例库:509只曾破20亿ETF(生命周期AUM_1M~36M/门槛日期/最新规模)。快照截至2026-08-18(一次性研究快照,update=manual)"
+file: reference/etf_success_cases.csv
+source: static
+_auto_fetch: false
+update_freq: manual

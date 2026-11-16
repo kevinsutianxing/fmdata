@@ -1,0 +1,7 @@
+category: macro
+description: 进口金额美元计当月同比(金十)
+fetch:
+  func: macro_china_imports_yoy
+file: macro/macro_imports.csv
+name: macro_imports
+source: akshare

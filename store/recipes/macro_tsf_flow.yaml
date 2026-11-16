@@ -1,0 +1,7 @@
+category: macro
+description: 社会融资规模增量月度亿元(商务部)
+fetch:
+  func: macro_china_shrzgm
+file: macro/macro_tsf_flow.csv
+name: macro_tsf_flow
+source: akshare

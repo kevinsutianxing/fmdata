@@ -1,0 +1,15 @@
+category: research_export
+description: Tushare index_daily 000300.SH price 20181201-20201130 for R30 stress
+  test window extension
+fetch:
+  date_col: trade_date
+  func: index_daily
+  params:
+    end_date: '20201130'
+    start_date: '20181201'
+    ts_code: 000300.SH
+  timeout: 300
+file: research_export/index_daily_000300_2018_2020.csv
+name: index_daily_000300_2018_2020
+source: tushare
+update_freq: manual

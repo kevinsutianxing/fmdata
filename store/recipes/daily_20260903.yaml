@@ -1,0 +1,9 @@
+category: market
+description: daily snapshot 20260903
+fetch:
+  func: daily
+  params:
+    trade_date: '20260903'
+file: market/daily_20260903.csv
+name: daily_20260903
+source: tushare

@@ -1,0 +1,6 @@
+name: daily_basic_factor_agg
+category: market
+description: 全市场日级估值聚合：市值加权盈利收益率、PB、原文高低PB个股20日相对动量及覆盖数（由fmdata历史daily_basic分片计算）
+file: market/daily_basic_factor_agg.csv
+source: static
+update_freq: manual

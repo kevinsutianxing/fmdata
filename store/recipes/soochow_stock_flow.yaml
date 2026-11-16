@@ -1,0 +1,12 @@
+_auto_fetch: false
+category: market
+description: 东吴宏观Macro Fans资金流·A股个股逐日全量截面(约5223只;Wind口径).列=身份+申万一二级行业+总市值+融资余额+近1日总市值变化/净流入/融资净买入(亿元).与tushare
+  moneyflow口径互补(含市值与两融联动).🔴滚动窗已剔除;PIT=本地首写冻结.
+fetch:
+  func: money_excel
+  params: {}
+  timeout: 1800
+file: soochow/soochow_stock_flow.csv
+name: soochow_stock_flow
+source: soochow_mcp
+update_freq: daily

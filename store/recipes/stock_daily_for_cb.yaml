@@ -1,0 +1,10 @@
+name: stock_daily_for_cb
+category: market
+description: "转债正股日线（Tushare daily，覆盖历史转债正股）"
+file: market/stock_daily_for_cb.csv
+source: agent
+update_freq: daily
+fetch:
+  func: agent
+  command: "python3 /home/ubuntu/fmdata/scripts/fetch_cb_stock_daily.py"
+  timeout: 900

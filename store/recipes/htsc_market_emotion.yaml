@@ -1,0 +1,13 @@
+_auto_fetch: false
+category: macro
+description: 华泰智研A股情绪指数(日频%,2020-08起,get_market_emotion market=A).研报衍生情绪读数.source=htsc_mcp;脚本fetch_htsc_mcp.py周度增量,append-only首写冻结.
+  🔴research_only,禁回测,PIT未验证(研报衍生序列,服务端可能回写;本地首写冻结=as-of取数时点).
+fetch:
+  func: htsc_mcp
+  params:
+    dataset: htsc_market_emotion
+  timeout: 900
+file: htsc/htsc_market_emotion.csv
+name: htsc_market_emotion
+source: htsc_mcp
+update_freq: weekly

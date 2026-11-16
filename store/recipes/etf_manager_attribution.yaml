@@ -1,0 +1,7 @@
+name: etf_manager_attribution
+category: reference
+description: "中国ETF全市场战略研究(1757只含清盘127,无幸存者偏差)·公司AUM增长三分解(净值/存量净申购/新发,2021-01→2026-08):行业66.1%靠新发。快照截至2026-08-18(一次性研究快照,update=manual)"
+file: reference/etf_manager_attribution.csv
+source: static
+_auto_fetch: false
+update_freq: manual

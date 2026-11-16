@@ -1,0 +1,12 @@
+_auto_fetch: false
+category: macro
+description: 东吴宏观·择时信号池概览md(四口径持仓条数状态分布最近触发日到期集中度),CSV逐日一行raw=md原文;GVRM晨会看板择时动向素材
+fetch:
+  func: signal_pool_overview
+  params:
+    market: all
+  timeout: 300
+file: soochow/soochow_signal_pool.csv
+name: soochow_signal_pool
+source: soochow_mcp
+update_freq: daily

@@ -1,0 +1,7 @@
+name: equity_etf_gsfund_benchmark
+category: reference
+description: 国寿安保权益ETF战略研究v2·权益口径1646只(含清盘113,无幸存者偏差;111只非权益已排除)。快照2026-08-18(月中,202608月度行=月中快照非月末)·国寿安保对标:71只同指数竞品×19列(AUM/成交/做市数/⚠️做市商数量=正登记下界(无名单≠无做市)/费率/⚠️费率列=天软首发口径,不反映降费/联接/TE排名/成立顺序)。国寿5只AUM经妙想核验偏差max0.111%;做市3/5人工核验查到(2只未查到≠无做市)(一次性研究快照,update=manual)
+file: reference/equity_etf_gsfund_benchmark.csv
+source: static
+_auto_fetch: false
+update_freq: manual

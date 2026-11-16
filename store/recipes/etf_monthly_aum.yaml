@@ -1,0 +1,7 @@
+name: etf_monthly_aum
+category: market
+description: "中国ETF全市场战略研究(1757只含清盘127,无幸存者偏差)·月度规模面板:72,352行×23列(月末总份额/净值/AUM/净值贡献/净申购贡献/quarter_end标记)。⚠️用拆解列须过滤dAUM=NaN行(1,075行债券ETF净值基数切换phantom)。快照截至2026-08-18(一次性研究快照,update=manual)"
+file: market/etf_monthly_aum.csv
+source: static
+_auto_fetch: false
+update_freq: manual

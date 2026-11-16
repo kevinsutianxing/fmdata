@@ -1,0 +1,7 @@
+name: equity_etf_manager_history
+category: reference
+description: 国寿安保权益ETF战略研究v2·权益口径1646只(含清盘113,无幸存者偏差;111只非权益已排除)。快照2026-08-18(月中,202608月度行=月中快照非月末)·公司×月面板:62公司×104月=4,920行×35列(权益口径AUM/产品数/市场份额排名/subtype分解/新产品vs存量贡献/机构占比加权/联接AUM)。⚠️AUM为公司ffill口径(整月无披露回填最后已知值,vs直接月末加总17个月差>0.1%,因上市前份额披露空窗,panel口径更真实);残差列恒等式中位8e-14%(一次性研究快照,update=manual)
+file: reference/equity_etf_manager_history.csv
+source: static
+_auto_fetch: false
+update_freq: manual

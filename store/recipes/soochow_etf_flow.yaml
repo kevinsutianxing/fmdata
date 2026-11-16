@@ -1,0 +1,11 @@
+_auto_fetch: false
+category: market
+description: 东吴宏观Macro Fans资金流·ETF逐日全量截面(约1715只;Wind口径).列=身份+基金规模+近1日规模变化/净流入/申赎导致规模变化/份额变化(亿元).source=soochow_mcp(Bearer=.env);原始Excel每日收盘后更新,窗口仅10个交易日,脚本日度增量抓取.🔴5d/20d滚动窗已剔除(可由1d序列自算);PIT=本地首写冻结.
+fetch:
+  func: money_excel
+  params: {}
+  timeout: 1800
+file: soochow/soochow_etf_flow.csv
+name: soochow_etf_flow
+source: soochow_mcp
+update_freq: daily

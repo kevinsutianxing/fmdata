@@ -1,0 +1,9 @@
+category: macro
+description: 人民币贷款分项历史数据探针
+fetch:
+  func: macro_rmb_loan
+  incremental: false
+file: macro/macro_rmb_loan_probe2.csv
+name: macro_rmb_loan_probe2
+source: akshare
+update_freq: manual

@@ -1,0 +1,11 @@
+_auto_fetch: false
+category: market
+description: 东吴宏观Macro Fans资金流·ETF聚合(跟踪指数491+投资类型一级/权益两级),全列含1d/5d/20d.🔴5d/20d为当期滚动窗,服务端逐日重写,禁回测.
+fetch:
+  func: money_excel
+  params: {}
+  timeout: 1800
+file: soochow/soochow_etf_flow_agg.csv
+name: soochow_etf_flow_agg
+source: soochow_mcp
+update_freq: daily

@@ -1,0 +1,48 @@
+_auto_fetch: false
+category: market
+description: '申万宏源金工 SW MCP 期货主力连续日线(OHLC+settle结算价+oi持仓量+oi_chg): 国债 TF(2013-09起)/T(2015-03起)/TS(2018-08起)/TL0(2023-04起)四品种全历史
+  + 12商品主力连续(黄金/白银/铜/铝/原油/螺纹钢/铁矿石/焦煤/焦炭/豆粕/碳酸锂/工业硅,2010起). 试点五项检查通过(T上市日settle 97.05/OI趋势合理,OHLC内洽,0.5-1.3s/call).
+  RED-pit_status: 主力拼接映射为当前口径(futures_meta.mapping_asof),回测前须复现拼接规则. RED-TL.CFX静默别名到T.CFX,30年国债必须用TL0.CFX.
+  RED-单响应240行上限会静默掐头,已按季度窗分片规避. 月度刷新=cron scripts/sw_mkt_refresh.py(fmdata重启后POST
+  /fetch亦可用)'
+fetch:
+  func: futures_daily
+  params:
+    instruments:
+    - start: '20130701'
+      ts_code: TF.CFX
+    - start: '20150101'
+      ts_code: T.CFX
+    - start: '20180601'
+      ts_code: TS.CFX
+    - start: '20230401'
+      ts_code: TL0.CFX
+    - start: '20100101'
+      ts_code: 黄金
+    - start: '20100101'
+      ts_code: 白银
+    - start: '20100101'
+      ts_code: 铜
+    - start: '20100101'
+      ts_code: 铝
+    - start: '20100101'
+      ts_code: 原油
+    - start: '20100101'
+      ts_code: 螺纹钢
+    - start: '20100101'
+      ts_code: 铁矿石
+    - start: '20100101'
+      ts_code: 焦煤
+    - start: '20100101'
+      ts_code: 焦炭
+    - start: '20100101'
+      ts_code: 豆粕
+    - start: '20100101'
+      ts_code: 碳酸锂
+    - start: '20100101'
+      ts_code: 工业硅
+  timeout: 7200
+file: market/sw_futures_daily.csv
+name: sw_futures_daily
+source: sw_mcp
+update_freq: monthly

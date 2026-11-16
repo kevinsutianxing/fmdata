@@ -1,0 +1,7 @@
+category: macro
+description: 海关进出口当月同比与金额(东方财富)
+fetch:
+  func: macro_china_hgjck
+file: macro/macro_trade_customs.csv
+name: macro_trade_customs
+source: akshare

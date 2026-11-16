@@ -1,0 +1,9 @@
+category: macro
+description: 人民币汇率历史数据探针
+fetch:
+  func: macro_china_rmb
+  incremental: false
+file: macro/macro_china_rmb_probe3.csv
+name: macro_china_rmb_probe3
+source: akshare
+update_freq: manual

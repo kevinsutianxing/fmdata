@@ -1,0 +1,11 @@
+_auto_fetch: false
+category: macro
+description: 东吴宏观·机构情绪矩阵(基金申赎情绪,73x15网格:基金类型x机构客群(理财子/银行自营/保险/公募/券商/信托)x净申购/净赎回B/S标记+金额占比),CSV逐日一行,raw列=完整JSON字符串,解析:json.loads(raw).
+fetch:
+  func: query_sentiment_by_date
+  params: {}
+  timeout: 1800
+file: soochow/soochow_sentiment_matrix.csv
+name: soochow_sentiment_matrix
+source: soochow_mcp
+update_freq: daily

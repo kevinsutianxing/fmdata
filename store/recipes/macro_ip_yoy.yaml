@@ -1,0 +1,7 @@
+category: macro
+description: 规模以上工业增加值当月同比(金十)
+fetch:
+  func: macro_china_industrial_production_yoy
+file: macro/macro_ip_yoy.csv
+name: macro_ip_yoy
+source: akshare

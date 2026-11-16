@@ -1,0 +1,7 @@
+category: macro
+description: 固定资产投资累计同比(东方财富)
+fetch:
+  func: macro_china_gdzctz
+file: macro/macro_fai.csv
+name: macro_fai
+source: akshare

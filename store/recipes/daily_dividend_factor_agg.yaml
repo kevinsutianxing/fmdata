@@ -1,0 +1,10 @@
+name: daily_dividend_factor_agg
+category: market
+description: "全市场市值加权TTM股息率及覆盖率，来自daily_basic的dv_ttm"
+file: market/daily_dividend_factor_agg.csv
+source: agent
+update_freq: on_demand
+fetch:
+  command: python3 /home/ubuntu/fmdata/scripts/build_dividend_agg.py
+  timeout: 900
+  output: market/daily_dividend_factor_agg.csv

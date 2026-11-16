@@ -1,0 +1,11 @@
+category: macro
+description: 探针:tushare yc_cb 中债国债收益率曲线权限与数据可用性
+fetch:
+  func: yc_cb
+  params:
+    curve_type: '0'
+    trade_date: '20260925'
+    ts_code: 1001.CB
+file: macro/cgb_tyc_probe.csv
+name: cgb_tyc_probe
+source: tushare

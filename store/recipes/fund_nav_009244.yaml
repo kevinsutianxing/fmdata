@@ -1,0 +1,10 @@
+name: fund_nav_009244
+category: market
+description: 国寿安保稳丰6个月持有期混合A(009244)每日单位净值/累计净值, 东财pingzhongdata走QG代理池
+file: market/fund_nav_009244.csv
+source: agent
+update_freq: daily
+fetch:
+  func: agent
+  command: "python3 /home/ubuntu/fmdata/store/scripts/fetch_fund_nav.py --symbol 009244"
+  timeout: 120

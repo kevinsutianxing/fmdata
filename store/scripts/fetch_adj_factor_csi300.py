@@ -17,7 +17,7 @@ import tushare as ts
 
 OUT_CSV = os.path.expanduser("~/fmdata/store/market/adj_factor_csi300.csv")
 WEIGHTS_CSV = os.path.expanduser("~/fmdata/store/market/index_weight_000300.csv")
-START, END = "20210801", "20260728"
+START, END = "20210801", "20261001"
 
 
 def _retry(fn, *args, **kwargs):

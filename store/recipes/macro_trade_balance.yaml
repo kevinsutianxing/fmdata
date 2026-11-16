@@ -1,0 +1,7 @@
+category: macro
+description: 贸易差额亿美元(金十)
+fetch:
+  func: macro_china_trade_balance
+file: macro/macro_trade_balance.csv
+name: macro_trade_balance
+source: akshare

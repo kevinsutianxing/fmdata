@@ -1,0 +1,7 @@
+name: equity_etf_launch
+category: reference
+description: 国寿安保权益ETF战略研究v2·权益口径1646只(含清盘113,无幸存者偏差;111只非权益已排除)。快照2026-08-18(月中,202608月度行=月中快照非月末)·发行与里程碑:1646只×52列(首募规模份额/AUM_1M-36M/曾突破10-300亿+首破日期与所需月数/上市首日规模成交/清盘)。⚠️费率列=天软首发口径,不反映降费;募集起止日期与认购户数无源全NA(一次性研究快照,update=manual)
+file: reference/equity_etf_launch.csv
+source: static
+_auto_fetch: false
+update_freq: manual

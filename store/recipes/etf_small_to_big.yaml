@@ -1,0 +1,7 @@
+name: etf_small_to_big
+category: reference
+description: "中国ETF全市场战略研究(1757只含清盘127,无幸存者偏差)·小变大案例:178例(首募<10亿→≥50亿等三口径,最大华夏1000ETF 218倍)。快照截至2026-08-18(一次性研究快照,update=manual)"
+file: reference/etf_small_to_big.csv
+source: static
+_auto_fetch: false
+update_freq: manual

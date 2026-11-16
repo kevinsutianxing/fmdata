@@ -1,0 +1,8 @@
+category: market
+fetch:
+  func: cb_daily_redeem
+  params:
+    limit: 2
+file: market/_p_cb_daily_redeem.csv
+name: _p_cb_daily_redeem
+source: tushare

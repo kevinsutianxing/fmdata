@@ -1,0 +1,10 @@
+name: income_full
+category: fundamentals
+description: "全市场正式财报合并报表归母净利润(akshare stock_yjbb_em 东财业绩报表, 最近8季度全市场)"
+file: fundamentals/income_full.csv
+source: agent
+update_freq: daily
+fetch:
+  func: agent
+  command: "python3 /home/ubuntu/fmdata/store/scripts/fetch_income_full.py"
+  timeout: 120

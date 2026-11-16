@@ -19,6 +19,8 @@ UNIVERSE = os.path.expanduser("~/fmdata/store/market/research_universe_hs300_zz5
 OUTDIR = os.path.expanduser("~/fmdata/store/research_export")
 START, END = "20150101", datetime.date.today().strftime("%Y%m%d")
 
+ONLY_APIS = {x.strip() for x in os.environ.get("ONLY_APIS", "").split(",") if x.strip()}
+
 APIS = [
     # (name, kwargs template, date_ranged?)
     ("daily", dict(start_date=START, end_date=END), True),
@@ -30,7 +32,7 @@ APIS = [
     ("income", dict(fields="ts_code,ann_date,f_ann_date,end_date,report_type,update_flag,total_revenue,revenue,oper_cost,operate_profit,total_profit,n_income,n_income_attr_p"), False),
     ("balancesheet", dict(fields="ts_code,ann_date,f_ann_date,end_date,report_type,update_flag,total_cur_assets,total_assets,total_cur_liab,total_liab,accounts_receiv,inventories,fix_assets,lt_borr,st_borr,total_hldr_eqy_exc_min_int"), False),
     ("cashflow", dict(fields="ts_code,ann_date,f_ann_date,end_date,report_type,n_cashflow_act,n_cashflow_inv_act,free_cashflow,c_pay_acq_const_fiolta,end_bal_cash"), False),
-    ("fina_indicator", dict(fields="ts_code,ann_date,end_date,eps,dt_eps,roe,roe_waa,roe_dt,roa,grossprofit_margin,netprofit_margin,debt_to_assets,netprofit_yoy,or_yoy,ocf_yoy,ocf_to_or"), False),
+    ("fina_indicator", dict(fields="ts_code,ann_date,end_date,eps,dt_eps,roe,roe_waa,roe_dt,roa,grossprofit_margin,netprofit_margin,debt_to_assets,netprofit_yoy,or_yoy,ocf_yoy,ocf_to_or,inv_turn,ar_turn,fa_turn,daa,ebit,ebitda,roic,interestdebt,netdebt,invest_capital"), False),
 ]
 
 
@@ -61,6 +63,8 @@ def main():
     log(f"universe: {len(universe)} stocks, range {START}-{END}")
 
     for api_name, kwargs, _ in APIS:
+        if ONLY_APIS and api_name not in ONLY_APIS:
+            continue
         out_csv = f"{OUTDIR}/{api_name}.csv"
         fail_log = f"{OUTDIR}/{api_name}.failures"
         done = set()

@@ -1,0 +1,10 @@
+name: sw_industry_pts
+category: fundamentals
+description: "申万行业 point-in-time 映射 L1/L2/L3 (tushare index_classify+index_member, 带 in/out 窗口) - 业绩披露报告行业归属用"
+file: fundamentals/sw_industry_pts.csv
+source: agent
+update_freq: monthly
+fetch:
+  func: agent
+  command: "python3 /home/ubuntu/fmdata/store/scripts/fetch_sw_industry_pts.py"
+  timeout: 600

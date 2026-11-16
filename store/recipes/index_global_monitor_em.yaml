@@ -1,0 +1,10 @@
+name: index_global_monitor_em
+category: overseas
+description: "全球监控五指数日线(不复权): NDX=100.NDX100纳斯达克100(2019-04起,em源端边界)/SOX=251.SOX费城半导体(2026-07起kline,1994-05起datacenter收盘回填source列区分)/HSTECH=124.HSTECH(2014-12基日起)/HSCEI=100.HSCEI国企指数(1993-07起)/VHSI=124.VHSI恒指波幅(2001-01起)。东财push2his+datacenter经QG代理池; 逐指数断点续跑upsert"
+file: market/index_global_monitor_em.csv
+source: agent
+update_freq: daily
+fetch:
+  func: agent
+  command: "python3 /home/ubuntu/fmdata/scripts/fetch_index_global_monitor.py"
+  timeout: 420

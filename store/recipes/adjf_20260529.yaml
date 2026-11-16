@@ -1,0 +1,8 @@
+category: market
+fetch:
+  func: adj_factor
+  params:
+    trade_date: '20260529'
+file: market/adjf_20260529.csv
+name: adjf_20260529
+source: tushare

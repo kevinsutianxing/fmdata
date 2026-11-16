@@ -1,0 +1,10 @@
+name: factor_catalog
+category: factors
+description: "统一因子目录(五源清单,2026-11-06与物化状态对齐): sw16(v1 z-score)+sw2 46(v2筹码7+raw39,ML3列2019-01起)+ts272(付费已物化至2026-10-30)+cons7(全窗月度面板2021-01→2026-10)+cjpy 70(61已物化非PIT围栏+停牌时长server-broken+8纯指数不适用,2026-11-06 P1补登). 列含 factor_id命名空间(sw./sw2./ts./cons./cjpy.)、类别、频率、universe、PIT状态/口径警告、查询方式. 统一查询入口=factor_query(sw/ts/cons/cjpy前缀,POST /fetch/factor_query;sw2走FactorStore.sw_panel或GET /data/sw_*_monthend_v2). 消费方(codex/agent)先查本目录再取数. 每周随数据源扫描刷新"
+update_freq: weekly
+fetch:
+  func: agent
+  command: "python3 /home/ubuntu/fmdata/store/scripts/build_factor_catalog.py"
+  timeout: 300
+file: factors/factor_catalog.csv
+source: agent

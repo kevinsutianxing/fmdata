@@ -1,0 +1,7 @@
+category: macro
+description: 出口金额美元计当月同比(金十)
+fetch:
+  func: macro_china_exports_yoy
+file: macro/macro_exports.csv
+name: macro_exports
+source: akshare

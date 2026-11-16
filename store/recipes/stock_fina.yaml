@@ -8,3 +8,6 @@ fetch:
   func: fina_indicator
   date_col: end_date
   batch_by_period: true
+# NOTE(2026-09-29): batch_by_period 无代码实现（静默忽略）；且当前 tushare token
+# 档位 fina_indicator 必须按 ts_code 查询。期次文件由 scripts/fetch_stock_fina_period.py
+# 按码批拉生成，scripts/ensure_stock_fina_fresh.sh 月度 cron 自愈补缺——勿走 POST /fetch/stock_fina。

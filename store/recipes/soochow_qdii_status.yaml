@@ -1,0 +1,11 @@
+_auto_fetch: false
+category: macro
+description: 东吴宏观·QDII申购状态监控(365只:申购状态三态/单日申购上限/份额币种/投向/变化),逐日全量截面.三态统计与变化清单可由本表groupby/逐日diff自算.
+fetch:
+  func: query_funds
+  params: {}
+  timeout: 1800
+file: soochow/soochow_qdii_status.csv
+name: soochow_qdii_status
+source: soochow_mcp
+update_freq: daily

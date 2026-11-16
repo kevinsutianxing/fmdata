@@ -1,6 +1,8 @@
 #!/bin/bash
 # SW V1.62 v2 链月度 catch-up（2026-11-05 立，补齐生产管道缺口）
 # 作用: chip 7 列 + raw 41 列月末采样自动刷新，幂等（已有月按 (date,ts_code) 跳过）
+#       + IND_ROT 行业轮动 4 列 catch-up（2026-11-06 追加：sw_ind_tables 通道拉当月→行业级
+#         月末表→个股级当月段重导，只取完整月末；详见 sw_indrot_monthly_catchup.py 头注）
 # 挂 cron: 37 7 4 * *（每月 4 日；旧链 backfill_sw_factors 在 7 日 07:23，互不冲突）
 # 详见 docs/sw-mcp/RUNBOOK.md V1.62 节
 set -u
@@ -27,6 +29,7 @@ run_pull() {
 
 run_pull chip_monthend_v2 sw_chip_full.py
 run_pull raw_monthend_v2  sw_raw_monthend_pull.py
+run_pull indrot_catchup   sw_indrot_monthly_catchup.py
 
 # Parquet 快取副本再生成（正本=CSV 不变; 逐块校验含在内, ~7s）
 if timeout 600 python3 /data/fmdata/scripts/convert_monthly_to_parquet.py >> "$LOG" 2>&1; then

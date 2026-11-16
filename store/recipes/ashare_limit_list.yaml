@@ -1,0 +1,10 @@
+_auto_fetch: false
+category: market
+fetch:
+  func: limit_list_d
+  params: {}
+  timeout: 300
+file: market/ashare_limit_list.csv
+name: ashare_limit_list
+source: tushare
+update_freq: daily

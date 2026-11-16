@@ -1,0 +1,10 @@
+name: daily_basic_dividend_history
+category: market
+description: "A股全市场日级股息率dv_ttm及估值历史，按交易日和月份分片，可断点续跑"
+file: market/daily_basic_dividend_history.csv
+source: agent
+update_freq: on_demand
+fetch:
+  command: python3 /home/ubuntu/fmdata/scripts/fetch_daily_basic_dividend.py
+  timeout: 900
+  output: market/daily_basic_dividend_history.csv

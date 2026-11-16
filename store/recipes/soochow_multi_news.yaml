@@ -1,0 +1,11 @@
+_auto_fetch: false
+category: macro
+description: 东吴宏观·多资产新闻日览md全文(执行摘要当日核心催化Top5大类资产情绪结构表待验证清单),CSV逐日一行raw=md原文;GVRM晨会看板隔夜层素材
+fetch:
+  func: get_latest_multi_news
+  params: {}
+  timeout: 300
+file: soochow/soochow_multi_news.csv
+name: soochow_multi_news
+source: soochow_mcp
+update_freq: daily

@@ -1,0 +1,11 @@
+category: market
+description: 中证全指(000985.CSI)日线，作为万得全A现实代理
+fetch:
+  date_col: trade_date
+  func: index_daily
+  params:
+    ts_code: 000985.CSI
+file: market/csi_all_a_daily.csv
+name: csi_all_a_daily
+source: tushare
+update_freq: daily

@@ -1,0 +1,10 @@
+name: consensus_factors
+category: fundamentals
+description: "分析师一致预期因子表(长表同ts_factor_value结构): 预期水平5个(eps_fg_1y/eps_fg_cagr2/pe_fwd_1y/rating_buy_ratio/rating_cover)+预期修正2个(eps_rev_3m/rating_rev_1m); 源=本地analyst_consensus+consensus_panel+consensus_snapshots+daily-matrix零外网; 目录=store/consensus_factor_catalog.json"
+update_freq: weekly
+fetch:
+  func: agent
+  command: "python3 /home/ubuntu/fmdata/store/scripts/build_consensus_factors.py"
+  timeout: 300
+file: fundamentals/consensus_factors.csv
+source: agent

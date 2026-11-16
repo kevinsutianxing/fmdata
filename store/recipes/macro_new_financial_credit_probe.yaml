@@ -1,0 +1,9 @@
+category: macro
+description: 新增金融机构人民币贷款，核验中长期贷款分项
+fetch:
+  func: macro_china_new_financial_credit
+  incremental: false
+file: macro/macro_new_financial_credit_probe.csv
+name: macro_new_financial_credit_probe
+source: akshare
+update_freq: manual

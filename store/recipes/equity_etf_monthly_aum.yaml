@@ -1,0 +1,7 @@
+name: equity_etf_monthly_aum
+category: market
+description: 国寿安保权益ETF战略研究v2·权益口径1646只(含清盘113,无幸存者偏差;111只非权益已排除)。快照2026-08-18(月中,202608月度行=月中快照非月末)·月度规模面板:66,028行×29列(月末总份额/净值/AUM/dAUM三分解:净值贡献+净申购贡献(Δ份额×前日NAV)+交叉项/月末季末年末标记)。⚠️用拆解列须过滤dAUM=NaN行(phantom已构建期修复1,311行,拆解列同NaN);202608=月中快照month_end=0(一次性研究快照,update=manual)
+file: market/equity_etf_monthly_aum.csv
+source: static
+_auto_fetch: false
+update_freq: manual

@@ -1,0 +1,11 @@
+category: macro
+description: 美元兑人民币中行折算价日度(sina)
+fetch:
+  func: currency_boc_sina
+  params:
+    end_date: '20260817'
+    start_date: '20190101'
+    symbol: 美元
+file: macro/macro_usdcny_boc.csv
+name: macro_usdcny_boc
+source: akshare

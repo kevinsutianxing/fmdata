@@ -1,0 +1,12 @@
+category: overseas
+description: 腾讯直连港股日线批量(00700/02800/09618,不复权,中文列+code列; 2026-11-07 为补齐 GVRM 页面缺口建)
+fetch:
+  command: python3 -c 'import akshare as ak,pandas as pd; fs=[ak.stock_hk_hist(symbol=s,period="daily",adjust="",start_date=t).assign(code=s+".HK")
+    for s,t in (("00700","20040616"),("02800","19991112"),("09618","20200618"))];
+    pd.concat(fs).to_csv("/dev/stdout",index=False)'
+  date_col: 日期
+  host: hk43
+  parser: csv
+file: overseas/tencent_hk_daily_batch_ak.csv
+name: tencent_hk_daily_batch_ak
+source: remote

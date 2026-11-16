@@ -1,0 +1,27 @@
+_auto_fetch: false
+category: market
+description: '申万宏源金工 SW MCP 指数日线: 中证500(000905,2004-12-31基日回补)+中证1000(000852,2009前回补,官方基日2010-12-31)+全球HSI/SPX/IXIC/N225(1990起).
+  申万行业指数不在此数据集(本地market/sw-close已有). 试点: 000300与本地tushare缓存39/39交易日close相对差0.0000%.
+  RED-单响应240行上限会静默掐头,已按季度窗分片规避. 月度刷新=cron scripts/sw_mkt_refresh.py(fmdata重启后POST
+  /fetch亦可用)'
+fetch:
+  func: index_daily
+  params:
+    indices:
+    - start: '20041201'
+      ts_code: 000905.SH
+    - start: '20050101'
+      ts_code: 000852.SH
+    - start: '19900101'
+      ts_code: HSI
+    - start: '19900101'
+      ts_code: SPX
+    - start: '19900101'
+      ts_code: IXIC
+    - start: '19900101'
+      ts_code: N225
+  timeout: 7200
+file: market/sw_index_daily.csv
+name: sw_index_daily
+source: sw_mcp
+update_freq: monthly

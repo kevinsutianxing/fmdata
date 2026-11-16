@@ -1,6 +1,6 @@
 category: overseas
 description: 腾讯控股00700.HK日线(HK43 akshare直连腾讯,免QG代理,2026-10-24改造)
-update_freq: daily
+update_freq: manual
 source: remote
 fetch:
   host: hk43

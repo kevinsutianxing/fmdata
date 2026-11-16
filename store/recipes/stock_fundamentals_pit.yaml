@@ -1,0 +1,10 @@
+name: stock_fundamentals_pit
+category: fundamentals
+description: "转债正股财务指标（Tushare fina_indicator，按公告日可见；含修订风险标记）"
+file: market/stock_fundamentals_pit.csv
+source: agent
+update_freq: daily
+fetch:
+  func: agent
+  command: "python3 /home/ubuntu/fmdata/scripts/fetch_cb_stock_fundamentals_pit.py"
+  timeout: 900

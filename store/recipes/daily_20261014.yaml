@@ -1,0 +1,10 @@
+category: market
+description: A股全市场日线 20261014 (R50)
+fetch:
+  func: daily
+  params:
+    end_date: '20261014'
+    start_date: '20261014'
+file: market/daily_20261014.csv
+name: daily_20261014
+source: tushare

@@ -1,0 +1,13 @@
+_auto_fetch: false
+category: macro
+description: 华泰智研全球宏观因子序列(周频619行,2015-01起,资产配置数据库).列=date/增长/通胀/流动性/法币信用/风险偏好/AI科技(研报归一化指数,基期=1).source=htsc_mcp(.env
+  HTSC_APP_KEY);脚本fetch_htsc_mcp.py周度增量,append-only首写冻结. 🔴research_only,禁回测,PIT未验证(研报衍生序列,服务端可能回写;本地首写冻结=as-of取数时点).
+fetch:
+  func: htsc_mcp
+  params:
+    dataset: htsc_global_macro_factors
+  timeout: 900
+file: htsc/htsc_global_macro_factors.csv
+name: htsc_global_macro_factors
+source: htsc_mcp
+update_freq: weekly

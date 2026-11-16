@@ -73,7 +73,14 @@ if src == "sw":
     except ValueError as e:
         die(f"sw 因子不存在或读列失败: {e}；可用因子见 /data/factor_catalog source=sw")
     if trade_date:
-        df = df[df["date"].astype(str).str.replace("-", "") == trade_date]
+        _d = df["date"].astype(str).str.replace("-", "")
+        df = df[_d == trade_date]
+        if df.empty:
+            # 2026-11-16 修: 本地 sw 快照锚"日历月末"(如 2026-10-31 周六), agent 按
+            # "最后交易日"(10-30)查会落空——降级为月粒度匹配(sw 本就是月度快照, 语义正确)
+            df = pd.read_csv(SW_CSV, usecols=cols)
+            _d = df["date"].astype(str).str.replace("-", "")
+            df = df[_d.str[:6] == trade_date[:6]]
     if ts_code:
         df = df[df["ts_code"] == ts_code]
     out = pd.DataFrame({
@@ -96,14 +103,21 @@ elif src == "ts":
     import tushare as ts
     ts.set_token(os.environ.get("TUSHARE_TOKEN", ""))
     pro = ts.pro_api()
-    kwargs = {"factor_name": name}
-    if trade_date:
-        kwargs["trade_date"] = trade_date
-    if ts_code:
-        kwargs["ts_code"] = ts_code
-    if len(kwargs) == 1:
-        die("ts 源需要 trade_date 或 ts_code 至少一个（全历史全市场太大）")
-    out = pro.factor_value(**kwargs)
+    # 2026-11-16 修: tushare factor_value 拒绝逗号多代码(整单返空) → facade 拆分逐查合并
+    code_list = [c.strip() for c in ts_code.split(",") if c.strip()] if ts_code else [None]
+    parts = []
+    for _code in code_list:
+        kwargs = {"factor_name": name}
+        if trade_date:
+            kwargs["trade_date"] = trade_date
+        if _code:
+            kwargs["ts_code"] = _code
+        if len(kwargs) == 1:
+            die("ts 源需要 trade_date 或 ts_code 至少一个（全历史全市场太大）")
+        _df = pro.factor_value(**kwargs)
+        if _df is not None and not _df.empty:
+            parts.append(_df)
+    out = pd.concat(parts, ignore_index=True) if parts else pd.DataFrame()
     if out is None or out.empty:
         die(f"tushare factor_value 返回空: {kwargs}")
     out = out[["factor_name", "ts_code", "trade_date", "factor_value"]]

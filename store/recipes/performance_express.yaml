@@ -1,0 +1,8 @@
+name: performance_express
+category: fundamentals
+description: "业绩快报数据 - akshare stock_yjkb_em"
+file: fundamentals/performance_express.csv
+source: akshare
+update_freq: daily
+fetch:
+  func: stock_yjkb_em

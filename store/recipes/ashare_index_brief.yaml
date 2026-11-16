@@ -1,0 +1,10 @@
+_auto_fetch: false
+category: market
+fetch:
+  func: index_daily
+  params: {}
+  timeout: 300
+file: market/ashare_index_brief.csv
+name: ashare_index_brief
+source: tushare
+update_freq: daily

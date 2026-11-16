@@ -1,0 +1,11 @@
+#!/bin/bash
+# us_stock_spot 独立刷新（20260929 摘出 06:00 批次——东财指纹识别对拥挤窗口敏感, 单跑+错峰后稳定）
+export TZ=Asia/Shanghai
+LOG=/tmp/fmdata-us-spot.log
+echo "[$(date '+%F %T')] === us_stock_spot solo refresh START ===" >> "$LOG"
+python3 /home/ubuntu/fmdata/store/scripts/fetch_us_stock_spot.py >> "$LOG" 2>&1
+rc=$?
+if [ $rc -ne 0 ]; then
+    ~/.openclaw/scripts/send_feishu_alert.sh "us_stock_spot 刷新失败 rc=$rc" "$(tail -5 $LOG)" warning
+fi
+echo "[$(date '+%F %T')] === DONE rc=$rc ===" >> "$LOG"

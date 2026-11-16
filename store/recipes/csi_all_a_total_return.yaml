@@ -1,0 +1,11 @@
+category: market
+description: 中证全指全收益指数(H00985.CSI)，作为万得全A全收益现实代理
+fetch:
+  date_col: trade_date
+  func: index_daily
+  params:
+    ts_code: H00985.CSI
+file: market/csi_all_a_total_return.csv
+name: csi_all_a_total_return
+source: tushare
+update_freq: daily

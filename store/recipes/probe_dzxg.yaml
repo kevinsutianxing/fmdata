@@ -1,0 +1,6 @@
+category: market
+fetch:
+  func: dzxg
+file: market/probe_dzxg.csv
+name: probe_dzxg
+source: tushare

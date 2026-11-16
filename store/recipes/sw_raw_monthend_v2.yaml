@@ -1,0 +1,8 @@
+category: factors
+description: 'SW新因子库(V1.62)原始值月度宽表41列: 26细分小因子+10风格合成+3 ML量价(2019-02起)。2016-01→2026-10
+  130/130全对齐(2020-01用1/23疫情前最后交易日,键记2020-01-31)。对齐证书见sw_factor_value.provenance-20261104.md。PIT:日频表月末采样,as-of当日;跨库注意:风格合成与旧z库非同秩(盈利0.59/低波0.79)禁混用,筹码列跨库安全'
+file: factors/sw_raw_monthend_v2.csv
+name: sw_raw_monthend_v2
+source: static
+update_freq: monthly
+_auto_fetch: false

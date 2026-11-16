@@ -1,0 +1,7 @@
+name: equity_etf_same_index_competition
+category: reference
+description: 国寿安保权益ETF战略研究v2·权益口径1646只(含清盘113,无幸存者偏差;111只非权益已排除)。快照2026-08-18(月中,202608月度行=月中快照非月末)·同指数竞争:1646只×31列(同指数ETF数/首只/规模与成交份额/联接规模/TE排名/⚠️做市商数量=正登记下界(无名单≠无做市))。TE排名优先2025年度缺失回退最新滚动(一次性研究快照,update=manual)
+file: reference/equity_etf_same_index_competition.csv
+source: static
+_auto_fetch: false
+update_freq: manual

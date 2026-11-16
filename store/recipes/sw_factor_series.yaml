@@ -1,0 +1,12 @@
+_auto_fetch: false
+category: factors
+description: 申万宏源金工 16 因子个股时序查询(风格/筹码2016-01起,GBM 2021-03起). 须 fetch.params.ts_codes/start/end;120行上限已按≤110月窗口自动分块;结果并入
+  sw_factor_value.csv
+fetch:
+  func: factor_series
+  params: {}
+  timeout: 3600
+file: factors/sw_factor_value.csv
+name: sw_factor_series
+source: sw_mcp
+update_freq: ondemand

@@ -1,0 +1,10 @@
+name: index_weight_000852_full
+category: market
+description: 中证1000历史成分权重全历史2015-至今(Tushare index_weight 000852.SH，按半年分页)
+fetch:
+  func: agent
+  command: python3 /home/ubuntu/fmdata/store/scripts/fetch_index_weight_000852.py
+  timeout: 900
+file: market/index_weight_000852_full.csv
+source: agent
+update_freq: monthly

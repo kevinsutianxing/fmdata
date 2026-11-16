@@ -1,0 +1,10 @@
+category: market
+description: chip-nowcast 原料窗口延伸 2026-10-01..2026-10-27(moneyflow/daily/daily_basic/adj_factor, tushare 按交易日)
+fetch:
+  command: python3 /home/ubuntu/fmdata/store/scripts/fetch_chip_window_ext.py
+  func: agent
+  timeout: 600
+file: market/chip_window_ext_20261001_20261027
+name: chip_window_ext_202610
+source: agent
+update_freq: manual

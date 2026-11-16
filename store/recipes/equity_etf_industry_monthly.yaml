@@ -1,0 +1,7 @@
+name: equity_etf_industry_monthly
+category: reference
+description: 国寿安保权益ETF战略研究v2·权益口径1646只(含清盘113,无幸存者偏差;111只非权益已排除)。快照2026-08-18(月中,202608月度行=月中快照非月末)·行业月度:104月×26列(全市场AUM/净申购/净值贡献/新发贡献/清盘/8个subtype分解/成交额)。与11表同ffill口径;2021-2026五年+2.78万亿=净申购68.3%+新发30.1%+净值1.4%(一次性研究快照,update=manual)
+file: reference/equity_etf_industry_monthly.csv
+source: static
+_auto_fetch: false
+update_freq: manual

@@ -1,0 +1,7 @@
+name: equity_etf_success_by_category
+category: reference
+description: 国寿安保权益ETF战略研究v2·权益口径1646只(含清盘113,无幸存者偏差;111只非权益已排除)。快照2026-08-18(月中,202608月度行=月中快照非月末)·品类成功率:9品类×27列(P20/P50/P100破20/50/100亿概率/清盘率/中位破位月数)。QDII68.9%>红利43.9%>科技37.2%>SmartBeta11.9%最差;首募≥50亿P100=62.2%零清盘(一次性研究快照,update=manual)
+file: reference/equity_etf_success_by_category.csv
+source: static
+_auto_fetch: false
+update_freq: manual

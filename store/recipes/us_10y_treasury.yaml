@@ -6,7 +6,7 @@ source: remote
 update_freq: daily
 fetch:
   host: hk43
-  command: python3 ~/.openclaw/skills/fred-data/scripts/fred_cli.py observations DGS10 --start 2020-01-01 --format csv
+  command: bash -c "set -a; source ~/.fred_env; python3 ~/.openclaw/skills/fred-data/scripts/fred_cli.py observations DGS10 --start 2020-01-01 --format csv"
   env: [FRED_API_KEY]
   parser: fred
   series_id: DGS10

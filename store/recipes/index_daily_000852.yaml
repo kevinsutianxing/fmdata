@@ -1,0 +1,13 @@
+name: index_daily_000852
+category: research_export
+description: "Tushare index_daily 000852.SH; refreshed 20261008 for a-share-index-enhancement"
+file: research_export/index_daily_000852.csv
+source: tushare
+update_freq: manual
+fetch:
+  func: index_daily
+  date_col: trade_date
+  params:
+    ts_code: "000852.SH"
+    start_date: "20260824"
+    end_date: "20261008"

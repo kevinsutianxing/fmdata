@@ -1,0 +1,7 @@
+name: etf_master
+category: reference
+description: "中国ETF全市场战略研究(1757只含清盘127,无幸存者偏差)·主表:1,757只ETF×41列(代码/管理人/成立上市清算日/募集总额/一二级分类R1-R11/费率/标的指数)。⚠️费率列_天软后缀=首发口径,不反映2023-11降费。快照截至2026-08-18(一次性研究快照,update=manual)"
+file: reference/etf_master.csv
+source: static
+_auto_fetch: false
+update_freq: manual

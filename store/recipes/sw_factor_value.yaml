@@ -1,0 +1,13 @@
+_auto_fetch: false
+category: factors
+description: 申万宏源金工 16 因子月度截面(10风格+4筹码+行业轮动+GBM量价;月末快照;含退市股无幸存者偏差). source=sw_mcp(邀请码在.env).
+  默认全 universe=factors/sw_universe.csv. 服务端120行/响应上限已内部分块;月度更新滞后~T+7;PIT资格待隔月diff验证.
+  回测前先读 docs/sw-mcp/RUNBOOK.md
+fetch:
+  func: factor_value
+  params: {}
+  timeout: 3600
+file: factors/sw_factor_value.csv
+name: sw_factor_value
+source: sw_mcp
+update_freq: monthly

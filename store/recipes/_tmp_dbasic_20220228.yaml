@@ -1,0 +1,8 @@
+category: market
+fetch:
+  func: daily_basic
+  params:
+    trade_date: '20220228'
+file: market/_tmp_dbasic_20220228.csv
+name: _tmp_dbasic_20220228
+source: tushare

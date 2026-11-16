@@ -1,0 +1,9 @@
+name: us_stock_spot
+category: overseas
+description: "美股大中市值实时行情快照 - 含总市值/流通市值/最新价/涨跌幅/市盈率/市净率, NASDAQ+NYSE+AMEX 按总市值降序 top ~3000 (覆盖 Russell 3000 可投资域, <$50M 微米/权证切尾)"
+file: overseas/us_stock_spot.csv
+source: agent
+update_freq: manual
+fetch:
+  command: "python3 /home/ubuntu/fmdata/store/scripts/fetch_us_stock_spot.py"
+  timeout: 900

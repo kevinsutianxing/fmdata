@@ -1,0 +1,10 @@
+name: usdcny_central_parity
+category: market
+description: "美元/人民币汇率中间价(近3年) — 源=cjpy服务端表「人民币汇率中间价」code=FXUSDCNY, 原始发布方中国外汇交易中心CFETS, 每交易日09:15后可得; 2026-11-07实测与 chinamoney 官方API逐日一致(6.7168/6.7156/6.7180), 替位 monitor 旧 BOC 源(2026-08-17 stale)。新鲜度闸门>10天 exit 1"
+file: market/usdcny_central_parity.csv
+source: agent
+update_freq: daily
+fetch:
+  func: agent
+  command: "python3 /home/ubuntu/fmdata/scripts/fetch_usdcny_parity.py"
+  timeout: 180

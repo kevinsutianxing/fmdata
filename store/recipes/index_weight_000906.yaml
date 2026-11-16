@@ -1,0 +1,10 @@
+category: market
+description: "中证800历史成分权重（Tushare index_weight 000906.SH，按半年分页拉全 PIT 2021-至今，800只/快照）"
+update_freq: monthly
+fetch:
+  func: agent
+  command: "python3 /home/ubuntu/fmdata/store/scripts/fetch_index_weight_000906.py"
+  timeout: 900
+file: market/index_weight_000906.csv
+name: index_weight_000906
+source: agent

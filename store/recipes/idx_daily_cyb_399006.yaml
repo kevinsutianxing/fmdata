@@ -1,0 +1,8 @@
+category: market
+fetch:
+  func: index_daily
+  params:
+    ts_code: 399006.SZ
+file: market/idx_daily_cyb_399006.csv
+name: idx_daily_cyb_399006
+source: tushare

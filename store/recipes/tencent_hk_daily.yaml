@@ -1,13 +1,11 @@
+name: tencent_hk_daily
 category: overseas
-description: 腾讯控股00700.HK全量历史日线(前复权OHLCV)
+description: "腾讯控股(00700.HK)日线,2004-06 至今。2026-11-09 起增量改走 ifzq.gtimg.cn(腾讯公开K线,免费)+westock bfq 备源,tushare hk_daily 配额(5次/天)仅留深历史回填(.bak.20261109-tushare)。口径=未复权 OHLC+vol(股)+amount(HKD);pre_close 为前收盘推算,除净日与官方或差除息额。盘中不落当日棒(HK 16:30 后才收)。"
+file: overseas/tencent_hk_daily.csv
+source: agent
+_auto_fetch: false
 update_freq: daily
 fetch:
-  date_col: trade_date
-  func: hk_daily
-  params:
-    end_date: '20260530'
-    start_date: '20040616'
-    ts_code: 00700.HK
-file: overseas/tencent_hk_daily.csv
-name: tencent_hk_daily
-source: tushare
+  func: agent
+  command: python3 /home/ubuntu/fmdata/scripts/fetch_hk_daily_incremental.py --files tencent_hk_daily.csv
+  timeout: 90

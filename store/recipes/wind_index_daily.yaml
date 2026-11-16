@@ -1,0 +1,12 @@
+category: market
+description: 'User-supplied Wind daily index history: 885001.WI and 881001.WI; monthly
+  manual upsert'
+fetch:
+  command: python3 /home/ubuntu/fmdata/store/scripts/ingest_wind_index_daily.py --incoming
+    /home/ubuntu/fmdata/incoming/wind_index_daily_latest.csv --store /home/ubuntu/fmdata/store/market/wind_index_daily.csv
+  func: agent
+  timeout: 120
+file: market/wind_index_daily.csv
+name: wind_index_daily
+source: agent
+update_freq: monthly_manual

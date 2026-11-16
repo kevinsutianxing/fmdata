@@ -1,0 +1,10 @@
+name: daily_window_20260822_20260930
+category: market
+description: A-share daily + daily_basic complete window 20260822-20260930, fetched one trade date at a time
+file: market/daily_window_20260822_20260930.csv
+source: agent
+update_freq: manual
+fetch:
+  func: agent
+  command: python3 /home/ubuntu/fmdata/store/scripts/fetch_daily_window.py
+  timeout: 1800

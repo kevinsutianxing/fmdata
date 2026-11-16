@@ -1,0 +1,9 @@
+category: macro
+description: 美元兑人民币汇率历史(东方财富)
+fetch:
+  func: forex_hist_em
+  params:
+    symbol: USDCNY
+file: macro/macro_usdcny.csv
+name: macro_usdcny
+source: akshare

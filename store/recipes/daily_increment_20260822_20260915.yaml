@@ -1,0 +1,10 @@
+category: market
+description: A股全市场日线增量 20260822-20260915
+fetch:
+  func: daily
+  params:
+    end_date: '20260915'
+    start_date: '20260822'
+file: market/daily_increment_20260822_20260915.csv
+name: daily_increment_20260822_20260915
+source: tushare

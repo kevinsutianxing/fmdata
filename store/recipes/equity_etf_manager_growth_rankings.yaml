@@ -1,0 +1,7 @@
+name: equity_etf_manager_growth_rankings
+category: reference
+description: 国寿安保权益ETF战略研究v2·权益口径1646只(含清盘113,无幸存者偏差;111只非权益已排除)。快照2026-08-18(月中,202608月度行=月中快照非月末)·公司增长排名:268公司×14列(2021初vs最新AUM/净申购/倍数/排名变化)。跃迁15家(广发295→2306亿等);国寿安保53.5→32.7亿rank20→29唯一绝对萎缩(一次性研究快照,update=manual)
+file: reference/equity_etf_manager_growth_rankings.csv
+source: static
+_auto_fetch: false
+update_freq: manual

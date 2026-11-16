@@ -1,0 +1,13 @@
+name: a_trade_calendar
+category: market
+description: "A股交易日历(SSE, tushare trade_cal 2019-2026, is_open+pretrade_date;2026-11-08 为流量覆盖/主题缺日认证而建,长休市核验用)"
+file: market/a_trade_calendar.csv
+source: tushare
+update_freq: yearly
+fetch:
+  func: trade_cal
+  date_col: cal_date
+  params:
+    exchange: SSE
+    start_date: "20190101"
+    end_date: "20261231"

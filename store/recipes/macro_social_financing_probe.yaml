@@ -1,0 +1,9 @@
+category: macro
+description: 社会融资规模历史数据，核验信用扩张口径
+fetch:
+  func: macro_china_shrzgm
+  incremental: false
+file: macro/macro_social_financing_probe.csv
+name: macro_social_financing_probe
+source: akshare
+update_freq: manual

@@ -1,0 +1,7 @@
+name: equity_etf_master
+category: reference
+description: 国寿安保权益ETF战略研究v2·权益口径1646只(含清盘113,无幸存者偏差;111只非权益已排除)。快照2026-08-18(月中,202608月度行=月中快照非月末)·权益ETF主表:1646只×59列(分类六flag/subtype8类/跨境权益296/费率/清盘标记/同指数顺序)。⚠️费率列=天软首发口径,不反映降费;"对应联接基金代码"列全NA用09表映射替代(一次性研究快照,update=manual)
+file: reference/equity_etf_master.csv
+source: static
+_auto_fetch: false
+update_freq: manual

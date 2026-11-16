@@ -1,0 +1,7 @@
+category: macro
+description: 城镇调查失业率(国家统计局月度)
+fetch:
+  func: macro_china_urban_unemployment
+file: macro/macro_unemployment.csv
+name: macro_unemployment
+source: akshare

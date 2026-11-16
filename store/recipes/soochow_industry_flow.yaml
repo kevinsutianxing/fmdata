@@ -1,0 +1,11 @@
+_auto_fetch: false
+category: market
+description: 东吴宏观Macro Fans资金流·申万行业逐日截面(L1=31+L2=124;Wind口径),全19列(含5d/20d滚动窗🔴禁回测拼接,回测用近1日列自算).含净流入额/占比/总市值变化/融资余额/融资净买入.
+fetch:
+  func: money_excel
+  params: {}
+  timeout: 1800
+file: soochow/soochow_industry_flow.csv
+name: soochow_industry_flow
+source: soochow_mcp
+update_freq: daily

@@ -1,0 +1,9 @@
+_auto_fetch: false
+category: market
+description: '中信前瞻海外AI产业链库·全量155序列长表(key,date,value): LLM价格/ARR/GPU租赁/CDS/CPU份额等'
+fetch:
+  func: static
+  params: {}
+file: market/citic_ai_series_long.csv
+name: citic_ai_series_long
+source: static

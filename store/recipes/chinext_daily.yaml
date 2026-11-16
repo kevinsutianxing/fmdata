@@ -1,0 +1,11 @@
+name: chinext_daily
+category: market
+description: "创业板指(399006.SZ)全历史日线行情"
+file: market/chinext_daily.csv
+source: tushare
+update_freq: daily
+fetch:
+  func: index_daily
+  date_col: trade_date
+  params:
+    ts_code: "399006.SZ"

@@ -1,0 +1,11 @@
+name: daily_20260822_20260930
+category: market
+description: A-share daily OHLCV increment 20260822-20260930 from Tushare
+file: market/daily_20260822_20260930.csv
+source: tushare
+update_freq: manual
+fetch:
+  func: daily
+  params:
+    start_date: '20260822'
+    end_date: '20260930'

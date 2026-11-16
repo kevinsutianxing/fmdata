@@ -1,0 +1,11 @@
+_auto_fetch: false
+category: macro
+description: 东吴宏观·择时模型月度快照CSV(权益综合信号_月频/宏观月度择时模型两个文件),month+file主键.模型文件内部自带历史序列,月度落一份冻结副本.
+fetch:
+  func: macro_model_get
+  params: {}
+  timeout: 1800
+file: soochow/soochow_macro_model.csv
+name: soochow_macro_model
+source: soochow_mcp
+update_freq: monthly

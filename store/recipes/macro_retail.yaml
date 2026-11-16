@@ -1,0 +1,7 @@
+category: macro
+description: 社会消费品零售总额当月同比(东方财富)
+fetch:
+  func: macro_china_consumer_goods_retail
+file: macro/macro_retail.csv
+name: macro_retail
+source: akshare

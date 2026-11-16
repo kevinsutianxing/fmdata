@@ -1,0 +1,9 @@
+category: market
+fetch:
+  func: stock_zh_index_daily
+  params:
+    symbol: sh000832
+file: market/csi_cb_index_ak.csv
+name: csi_cb_index_ak
+source: akshare
+update_freq: daily

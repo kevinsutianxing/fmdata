@@ -1,0 +1,13 @@
+category: overseas
+description: 阿里巴巴-W 09988.HK日线(HK43 akshare直连腾讯,免QG代理,零tushare配额;不复权口径同 tushare hk_daily
+  close;2026-11-07 建,作为 tencent_hk_daily_09988 的配额自由回填/兜底源)
+fetch:
+  command: python3 -c 'import akshare as ak; df=ak.stock_hk_hist(symbol="09988", period="daily",
+    adjust="", start_date="20191126"); df.to_csv("/dev/stdout", index=False)'
+  date_col: 日期
+  host: hk43
+  parser: csv
+file: overseas/tencent_hk_daily_09988_ak.csv
+name: tencent_hk_daily_09988_ak
+source: remote
+update_freq: manual

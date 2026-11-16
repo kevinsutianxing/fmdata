@@ -1,14 +1,12 @@
 name: csi_cb_idx_hist
 category: market
-description: Official CSI Convertible Bond Index 000832 daily history from Eastmoney via akshare proxy pool
+description: "中证转债指数000832.CSI日线历史 - 已从akshare+QG代理迁移到tushare index_daily(20260929), 零代理依赖"
 file: market/csi_cb_idx_hist.csv
-source: akshare
+source: tushare
 update_freq: daily
 fetch:
-  func: index_zh_a_hist
+  func: index_daily
   params:
-    symbol: "000832"
-    period: "daily"
-  date_col: 日期
-  incremental: false
-  proxy: qg
+    ts_code: "000832.CSI"
+    start_date: "20180101"
+  date_col: trade_date

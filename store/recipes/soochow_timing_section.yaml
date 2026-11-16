@@ -1,0 +1,11 @@
+_auto_fetch: false
+category: market
+description: 东吴宏观择时历史库·每日全截面(10口径:全A/港股/全体ETF/申万一级二级/宽基/风格/港股指数/商品/期货,约1.04万行/日).字段=风险度/综合动量/综合评分/当日涨跌/换手/市值/成交额/收盘/短中期均线/局部顶底信号/一二级行业.服务端仅存49个交易日滚动窗,本地日度落地即冻结(PIT安全);历史信号含左侧/右侧/超跌状态.
+fetch:
+  func: hist_section
+  params: {}
+  timeout: 1800
+file: soochow/soochow_timing_section.csv
+name: soochow_timing_section
+source: soochow_mcp
+update_freq: daily

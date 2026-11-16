@@ -1,0 +1,7 @@
+name: etf_late_mover
+category: reference
+description: "中国ETF全市场战略研究(1757只含清盘127,无幸存者偏差)·后发反超案例:216对(同指数后发≥1.5×首只,含费率/成交额/联接证据列,缺数NA)。快照截至2026-08-18(一次性研究快照,update=manual)"
+file: reference/etf_late_mover.csv
+source: static
+_auto_fetch: false
+update_freq: manual

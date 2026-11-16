@@ -1,0 +1,13 @@
+_auto_fetch: false
+category: fundamentals
+description: tushare 自研因子库(2026-08-12上线,试用权限):factor_value 因子值长表(factor_name,ts_code,trade_date,factor_value)。全量202因子目录已从官方文档(doc_id=486)提取并逐个API验证通过(2026-08-20),目录=store/ts_factor_catalog.json(含分类+算法逻辑),名单=store/ts_factor_names_all.txt。九类:Alpha101x31/成长15/流动性35/动量20/质量59/反转3/风险25/规模3/价值11。单因子单日=全市场截面约5300~5543行;按ts_code可拉单票全历史(价格类20100104起,财务类20100312起)。注意:①财务比率类因子(毛利率/流动比率/存货周转等)剔除金融板块(银行券商无此类科目,~113只)属正常;②因子值口径混合——部分截面排名标准化[0,1],部分原始值(如size=-log(市值)),逐因子核对;③code后缀别写错(600519.SH非.SZ)。改查询=改本recipe的fetch.params(factor_name必填,ts_code/trade_date选一)再POST /fetch/ts_factor_value。限频实测≥1次/秒。
+fetch:
+  func: factor_value
+  params:
+    factor_name: size
+    trade_date: '20260812'
+  timeout: 120
+file: fundamentals/ts_factor_value.csv
+name: ts_factor_value
+source: tushare
+update_freq: ondemand

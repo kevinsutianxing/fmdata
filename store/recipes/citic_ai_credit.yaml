@@ -1,0 +1,9 @@
+_auto_fetch: false
+category: market
+description: 中信前瞻海外AI产业链库·信用块长表(cds5y/zspread/CME期限结构, 单位bps, LSEG/CME源)
+fetch:
+  func: static
+  params: {}
+file: market/citic_ai_credit.csv
+name: citic_ai_credit
+source: static

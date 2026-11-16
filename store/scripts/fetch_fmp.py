@@ -53,6 +53,21 @@ def get(path, params):
     raise RuntimeError(f"exhausted {url}")
 
 
+SYM_CURRENCY: dict[str, str] = {}  # 本次运行从 statements 响应实收的币种
+
+
+def _merged_currency(cache_path):
+    """已有缓存 ∪ 本次实收(实收优先),供 statements 收尾与 estimates 推断共用."""
+    merged = {}
+    if os.path.exists(cache_path):
+        with open(cache_path) as f:
+            for r in csv.DictReader(f):
+                if r.get("symbol") and r.get("currency"):
+                    merged[r["symbol"]] = r["currency"]
+    merged.update(SYM_CURRENCY)
+    return merged
+
+
 # 2026-11-08: 免费档对非白名单 symbol 返回 402 "Special Endpoint ... value set
 # for 'symbol'" —— 这是按只封锁, 不是配额耗尽; 逐只跳过让整批继续, 真 402 仍然中止.
 SKIPPED = set()
@@ -139,18 +154,29 @@ def mode_estimates(symbols):
         except Exception as e:
             fail += 1
             print(f"  FAIL {s}: {e}", file=sys.stderr)
-    old = {(r["symbol"], r["date"]): r for r in load_csv(path, cols) if (r["symbol"], r["date"]) not in got}
+    # 2026-11-09: estimates 响应无币种字段(FMP 官方无),非美报表公司按 statements
+    # 缓存推断并显式标注来源;推断不出的留空,由下游标 UNVERIFIED——不猜。
+    cur_map = _merged_currency(f"{STORE}/fmp_symbol_currency.csv")
+    est_cols = cols + ["currency", "currency_source"]
+    for r in got.values():
+        c = cur_map.get(r["symbol"], "")
+        r["currency"] = c
+        r["currency_source"] = "INFERRED_FROM_STATEMENTS" if c else ""
+    old = {(r["symbol"], r["date"]): r for r in load_csv(path, est_cols) if (r["symbol"], r["date"]) not in got}
     allr = list(old.values()) + list(got.values())
     allr.sort(key=lambda r: (r["symbol"], r["date"]))
-    save_csv(path, cols, allr)
-    print(f"estimates ok={ok} fail={fail} rows={len(allr)} skipped={sorted(SKIPPED)}")
+    save_csv(path, est_cols, allr)
+    print(f"estimates ok={ok} fail={fail} rows={len(allr)} cur_mapped={sum(1 for r in got.values() if r['currency'])} skipped={sorted(SKIPPED)}")
 
 
 def mode_statements(symbols):
     """季度三表 tidy 长表, 键=(statement,symbol,period_end,field), null 跳过."""
     path = f"{STORE}/fmp_us_statements.csv"
     cols = ["statement", "symbol", "period_end", "filing_date", "accepted_date",
-            "fiscal_year", "period", "field", "value", "fetched_at"]
+            "fiscal_year", "period", "field", "value", "reported_currency", "fetched_at"]
+    # 2026-11-09 用户授权: FMP statements 原生带 reportedCurrency(实测 TSM=TWD),落列并缓存
+    # symbol→币种映射,供无币种字段的 estimates 端点推断(currency_source=INFERRED_...)。
+    cur_cache = f"{STORE}/fmp_symbol_currency.csv"
     stmts = [("income", "income-statement"), ("balance", "balance-sheet-statement"),
              ("cashflow", "cash-flow-statement")]
     got = {}
@@ -166,6 +192,9 @@ def mode_statements(symbols):
                 for r in rows:
                     pe, fd, ad = r.get("date", ""), r.get("filingDate", ""), r.get("acceptedDate", "")
                     fy, pq = r.get("fiscalYear", ""), r.get("period", "")
+                    rc = str(r.get("reportedCurrency") or "")
+                    if rc:
+                        SYM_CURRENCY[s] = rc
                     for k, v in r.items():
                         if k in ("date", "filingDate", "acceptedDate", "fiscalYear", "period",
                                  "symbol", "reportedCurrency", "cik", "link", "finalLink"):
@@ -175,7 +204,8 @@ def mode_statements(symbols):
                         got[(label, s, pe, k)] = {
                             "statement": label, "symbol": s, "period_end": pe,
                             "filing_date": fd, "accepted_date": ad, "fiscal_year": fy,
-                            "period": pq, "field": k, "value": v, "fetched_at": NOW,
+                            "period": pq, "field": k, "value": v,
+                            "reported_currency": rc, "fetched_at": NOW,
                         }
                 ok += 1
             except QuotaStop:
@@ -193,6 +223,9 @@ def mode_statements(symbols):
     allr = list(old.values()) + list(got.values())
     allr.sort(key=lambda r: (r["symbol"], r["statement"], r["period_end"], r["field"]))
     save_csv(path, cols, allr)
+    save_csv(cur_cache, ["symbol", "currency", "source", "updated"],
+             [{"symbol": k, "currency": v, "source": "FMP_STATEMENTS",
+               "updated": NOW} for k, v in sorted(_merged_currency(cur_cache).items())])
     print(f"statements ok={ok} fail={fail} rows={len(allr)} skipped={sorted(SKIPPED)}")
 
 

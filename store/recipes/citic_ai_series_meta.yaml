@@ -1,0 +1,9 @@
+_auto_fetch: false
+category: market
+description: 中信前瞻海外AI产业链库·序列元数据(key/名称/单位/频率/来源)
+fetch:
+  func: static
+  params: {}
+file: market/citic_ai_series_meta.csv
+name: citic_ai_series_meta
+source: static

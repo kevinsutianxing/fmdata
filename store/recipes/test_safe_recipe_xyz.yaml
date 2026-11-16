@@ -1,0 +1,9 @@
+_auto_fetch: false
+category: market
+fetch:
+  func: daily
+  params:
+    ts_code: 000001.SZ
+file: market/test_safe_recipe_xyz.csv
+name: test_safe_recipe_xyz
+source: tushare

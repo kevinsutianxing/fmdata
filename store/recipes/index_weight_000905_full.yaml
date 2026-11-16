@@ -1,0 +1,10 @@
+category: market
+description: 中证500历史成分权重全历史2015-至今(Tushare index_weight 半年分页)
+fetch:
+  command: python3 /home/ubuntu/fmdata/store/scripts/fetch_index_weight_hs300_zz500.py
+  func: agent
+  timeout: 600
+file: market/index_weight_000905_full.csv
+name: index_weight_000905_full
+source: agent
+update_freq: monthly

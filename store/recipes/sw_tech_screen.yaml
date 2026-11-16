@@ -1,0 +1,13 @@
+_auto_fetch: false
+category: market
+description: 申万金工·每日买点共振技术筛选(V1.57缸论一二三买口径,20日胜率OOS57.4%),每股一行含买点背驰浪位;meta表存扫描数总数funnel;limit钳20;非荐股须带data_date
+fetch:
+  func: screen_technical
+  params:
+    bullish_consensus: true
+    limit: 20
+  timeout: 300
+file: sw/sw_tech_screen.csv
+name: sw_tech_screen
+source: sw_mcp
+update_freq: daily

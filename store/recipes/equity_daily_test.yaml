@@ -1,0 +1,10 @@
+category: market
+fetch:
+  func: daily
+  params:
+    end_date: '20240628'
+    start_date: '20240101'
+    ts_code: 000001.SZ
+file: market/equity_daily_test.csv
+name: equity_daily_test
+source: tushare

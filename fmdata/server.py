@@ -320,7 +320,9 @@ def _all_recipes() -> dict:
     reg = load_registry()
     recipes = {}
     for name, ds in reg.get("datasets", {}).items():
-        if "recipe" in ds:
+        # 2026-11-14: registry 曾混入 bool 型 recipe(moomoo_iv_history 手工登记脏值),
+        # 单条坏值让 /catalog 与 /search 整体 500 多日; 非 dict 一律跳过。
+        if isinstance(ds.get("recipe"), dict):
             recipes[name] = ds["recipe"]
     return recipes
 

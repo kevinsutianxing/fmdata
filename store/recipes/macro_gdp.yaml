@@ -1,0 +1,7 @@
+category: macro
+description: 中国GDP季度(东方财富)
+fetch:
+  func: macro_china_gdp
+file: macro/macro_gdp.csv
+name: macro_gdp
+source: akshare

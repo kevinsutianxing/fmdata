@@ -1,0 +1,8 @@
+category: factors
+description: 'SW新因子库筹码7列月末(2016-01→2026-10 130/130全对齐): 原版4列+ADJUSTED_HOLDING_COST/ADJUSTED_COMPOSITE_CHIP_FACTOR/INDUSTRY_MV_NEUTRAL_SCORE三新列。与旧库筹码列秩相关0.956可跨库替换(R57b
+  C4实证+1.37pp)。列名前缀CN_ASHARE_CHIP__'
+file: factors/sw_chip_monthend_v2.csv
+name: sw_chip_monthend_v2
+source: static
+update_freq: monthly
+_auto_fetch: false

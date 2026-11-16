@@ -39,7 +39,8 @@ def main():
 
     this_year = time.localtime().tm_year
     periods = []
-    for y in range(START_YEAR, this_year + 2):
+    end_year = this_year if time.localtime().tm_mon < 12 else this_year + 1
+    for y in range(START_YEAR, end_year + 1):
         periods.append((f"{y}0101", f"{y}0630"))
         periods.append((f"{y}0701", f"{y}1231"))
 

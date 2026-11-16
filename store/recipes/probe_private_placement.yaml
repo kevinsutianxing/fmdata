@@ -1,0 +1,8 @@
+category: market
+fetch:
+  func: private_placement
+  params:
+    ann_date: '20240101'
+file: market/probe_private_placement.csv
+name: probe_private_placement
+source: tushare

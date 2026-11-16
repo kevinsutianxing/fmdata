@@ -1,0 +1,11 @@
+_auto_fetch: false
+category: macro
+description: 东吴宏观·游资复盘md全文(涨停跌停亏钱效应最高板晋级率连板梯队龙虎榜机构净买卖监管异动次日观察,AI量化生成),CSV逐日一行raw=md原文;服务端仅留近10交易日;GVRM晨会看板素材
+fetch:
+  func: get_latest_review
+  params: {}
+  timeout: 300
+file: soochow/soochow_daily_review.csv
+name: soochow_daily_review
+source: soochow_mcp
+update_freq: daily

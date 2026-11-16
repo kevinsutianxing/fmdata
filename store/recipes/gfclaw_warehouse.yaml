@@ -1,0 +1,14 @@
+category: market
+description: 'gfclaw COS 数仓(91表 Parquet,1990→今): A股/港股/美股日行情+衍生指标、财务三表+8附注明细、TTM指标、一致预期快照/滚动/盈利预测事件、机构持仓明细、调研问答corp_ir_qa、两融、港股通资金流、自由流通权重、指数行情(SW/CITICS
+  L2)、ETF净值、转债行情、金价的月度分区Parquet。查询走 GET /gfclaw/tables(清单+字段) + GET /gfclaw/query(参数
+  table/start/end/ticker_id/columns/limit;frozen_only=true=冻结分区PIT围栏,回测必须开;当月current层每日重刷禁入回测终值)。POST
+  /fetch/gfclaw_warehouse 触发 COS 增量同步(慢,分钟级)。原始 Parquet 在 /data/gfclaw/local_market_data/。关键词:机构持仓
+  调研 一致预期 滚动一致预期 转债 ETF净值 美股日线 港股通 自由流通权重 业绩预告 非经常性损益 应收账龄'
+fetch:
+  command: python3 /data/gfclaw/scripts/sync_locked.py --ensure-fresh --start-date
+    1990-01-01
+  timeout: 3600
+file: gfclaw/table_dictionary.csv
+name: gfclaw_warehouse
+source: agent
+update_freq: daily

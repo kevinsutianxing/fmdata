@@ -1,0 +1,10 @@
+category: market
+fetch:
+  func: index_daily
+  params:
+    end_date: '20261030'
+    start_date: '20151201'
+    ts_code: H00300.CSI
+file: market/index_daily_H00300_full.csv
+name: index_daily_H00300_full
+source: tushare

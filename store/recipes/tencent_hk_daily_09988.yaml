@@ -1,0 +1,11 @@
+name: tencent_hk_daily_09988
+category: overseas
+description: "阿里巴巴-SW(09988.HK)日线,2019-11 上市至今。2026-11-09 起增量改走 ifzq+westock 免费源(原 tushare hk_daily,配额留深回填,见 .bak.20261109-tushare)。口径=未复权 OHLC+vol(股)+amount(HKD)。"
+file: overseas/tencent_hk_daily_09988.csv
+source: agent
+_auto_fetch: false
+update_freq: daily
+fetch:
+  func: agent
+  command: python3 /home/ubuntu/fmdata/scripts/fetch_hk_daily_incremental.py --files tencent_hk_daily_09988.csv
+  timeout: 90

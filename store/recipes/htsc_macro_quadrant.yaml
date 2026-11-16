@@ -1,0 +1,13 @@
+_auto_fetch: false
+category: macro
+description: 华泰智研中美宏观象限5表合并长表(月频):中国信贷脉冲(同比+DR007)/中国增长_通胀/库存周期_中国_ppi(2008起)/盈利_流动性周期_中国/美国信贷脉冲.列=table_name/date/indicator/value.source=htsc_mcp;脚本fetch_htsc_mcp.py周度增量,append-only首写冻结.
+  🔴research_only,禁回测,PIT未验证(研报衍生序列,服务端可能回写;本地首写冻结=as-of取数时点).
+fetch:
+  func: htsc_mcp
+  params:
+    dataset: htsc_macro_quadrant
+  timeout: 900
+file: htsc/htsc_macro_quadrant.csv
+name: htsc_macro_quadrant
+source: htsc_mcp
+update_freq: weekly

@@ -1,0 +1,10 @@
+category: market
+description: 中金所IO/MO股指期权ATM IV期限结构(Black-76+平价远期,结算价推导非官方指数,2026-11-07起为GVRM补CFFEX_IO/CFFEX_MO)
+fetch:
+  command: python3 /home/ubuntu/fmdata/scripts/fetch_cffex_atm_iv.py
+  func: agent
+  timeout: 600
+file: market/cffex_atm_iv.csv
+name: cffex_atm_iv
+source: agent
+update_freq: daily

@@ -1,0 +1,11 @@
+_auto_fetch: false
+category: macro
+description: 东吴宏观·资金流周报CSV(解禁/增减持/再融资三类,各含汇总+明细+未来8周逐周/12月逐月日历).type+period为主键,周度追加.
+fetch:
+  func: get_unlock_report
+  params: {}
+  timeout: 1800
+file: soochow/soochow_weekly_reports.csv
+name: soochow_weekly_reports
+source: soochow_mcp
+update_freq: weekly

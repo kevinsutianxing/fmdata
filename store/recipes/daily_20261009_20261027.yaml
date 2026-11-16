@@ -1,0 +1,10 @@
+category: market
+description: A股全市场日线增量 20261009-20261027 (R50 chipfusion 回测延伸)
+fetch:
+  func: daily
+  params:
+    end_date: '20261027'
+    start_date: '20261009'
+file: market/daily_20261009_20261027.csv
+name: daily_20261009_20261027
+source: tushare
