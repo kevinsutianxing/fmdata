@@ -1,10 +1,12 @@
 category: overseas
-description: 腾讯控股00700.HK日线(HK43 akshare直连腾讯,免QG代理,2026-10-24改造)
+description: 腾讯控股00700.HK日线·备源(HK43 直连腾讯 ifzq, 🔴2026-11-16修正:原实现误用东财stock_hk_hist被push2拒数据中心IP,已切stock_hk_daily真·ifzq;hfq不变锚全量重拉;列=日期/开盘/最高/最低/收盘/成交量/成交额,东财衍生列已弃)
 update_freq: manual
 source: remote
 fetch:
   host: hk43
-  command: 'python3 -c ''import akshare as ak; df=ak.stock_hk_hist(symbol="00700", period="daily", adjust="hfq", start_date="2004-06-16"); df.to_csv("/dev/stdout", index=False)'''
+  command: python3 -c 'import akshare as ak; df=ak.stock_hk_daily(symbol="00700",
+    adjust="hfq").rename(columns={"date":"日期","open":"开盘","high":"最高","low":"最低","close":"收盘","volume":"成交量","amount":"成交额"});
+    df.to_csv("/dev/stdout", index=False)'
   parser: csv
   date_col: 日期
 file: overseas/tencent_hk_daily_ak.csv
