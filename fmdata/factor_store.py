@@ -60,6 +60,11 @@ _SW_TABLES["sw2_indrot"] = os.path.join(CSI1800_DATA, "sw2_indrot_stock_202101_2
 _HTSC_DIR = os.path.join(STORE, "htsc")
 _HTSC_AUDIT = os.path.join(_HTSC_DIR, "audit.log")
 
+# 2026-11-17 RCE 六因子 (天风金工残余现金收益复现, gfclaw 冻结层; 纯加法):
+#   store/factors/rce/<name>.parquet 长表 ym/ts_code/value, 月末截面(formation, 用于下月收益)。
+#   PIT-safe: post_day 严格对齐 + 冻结物化, 无服务端重写 → 不设非PIT围栏。
+_RCE_DIR = os.path.join(STORE, "rce")
+
 
 class FactorStore:
     def __init__(self, root=STORE):
@@ -247,6 +252,18 @@ class FactorStore:
             raise KeyError(f"htsc.{name}: no rows for ym={ym_raw} (window 202101..latest)")
         return df.set_index("ts_code")["value"].sort_index()
 
+    def _rce_series(self, factor, ym_raw):
+        """rce.<name> 月末截面 → Series(index=ts_code)。长表 ym/ts_code/value, 冻结物化,
+        PIT-safe(post_day 对齐) → 无围栏。window 201712..202609。"""
+        name = factor.split(".", 1)[1]
+        path = os.path.join(_RCE_DIR, f"{name}.parquet")
+        if not os.path.exists(path):
+            raise KeyError(f"rce factor not materialized: {name} (see rce/manifest.json)")
+        df = pd.read_parquet(path, filters=[("ym", "=", int(ym_raw))])   # rce ym 键=int
+        if df.empty:
+            raise KeyError(f"rce.{name}: no rows for ym={ym_raw} (window 201712..202609)")
+        return df.set_index("ts_code")["value"].sort_index()
+
     @staticmethod
     def _ym_compact(ym):
         """'2026-10'|'202610' → '202610' (parquet 层原生键)。"""
@@ -254,8 +271,9 @@ class FactorStore:
 
     def cross_section_by_id(self, factor_id, ym, allow_nonpit=False):
         """单因子单月截面 → pd.Series(index=ts_code)。
-        factor_id: 'cons.<col>' | 'cjpy.<name>' | 'htsc.<slug>'; ym='YYYY-MM'(或 YYYYMM)。
-        cjpy.*/htsc.* 默认抛 PermissionError(非PIT围栏), allow_nonpit=True 放行+审计。"""
+        factor_id: 'cons.<col>' | 'cjpy.<name>' | 'htsc.<slug>' | 'rce.<name>'; ym='YYYY-MM'(或 YYYYMM)。
+        cjpy.*/htsc.* 默认抛 PermissionError(非PIT围栏), allow_nonpit=True 放行+审计。
+        rce.* PIT-safe(冻结物化) 无围栏。"""
         ymc = self._ym_compact(ym)
         if factor_id.startswith("cons."):
             col = factor_id.split(".", 1)[1]
@@ -272,6 +290,8 @@ class FactorStore:
         if factor_id.startswith("htsc."):
             self._nonpit_guard(factor_id, allow_nonpit, audit_paths=(_HTSC_DIR, _HTSC_AUDIT))
             return self._htsc_series(factor_id, ymc)
+        if factor_id.startswith("rce."):
+            return self._rce_series(factor_id, ymc)
         raise NotImplementedError(
             f"namespace of '{factor_id}' not in P1 unified layer (cons./cjpy./htsc.); "
             f"ts/sw2 用 cross_section(month, factors) / sw_panel(table, month, columns)")
@@ -313,6 +333,17 @@ class FactorStore:
                 raise KeyError(f"htsc.{name}: no rows for {ts_code}")
             s = df.set_index("ym")["value"].sort_index()
             s.index = s.index.str[:4] + "-" + s.index.str[4:]
+            return s
+        if factor_id.startswith("rce."):
+            name = factor_id.split(".", 1)[1]
+            path = os.path.join(_RCE_DIR, f"{name}.parquet")
+            if not os.path.exists(path):
+                raise KeyError(f"rce factor not materialized: {name} (see rce/manifest.json)")
+            df = pd.read_parquet(path, filters=[("ts_code", "=", ts_code)])
+            if df.empty:
+                raise KeyError(f"rce.{name}: no rows for {ts_code}")
+            s = df.set_index("ym")["value"].sort_index()
+            s.index = s.index.astype(str).str[:4] + "-" + s.index.astype(str).str[4:]
             return s
         raise NotImplementedError(
             f"namespace of '{factor_id}' not in P1 unified layer; "
@@ -412,6 +443,7 @@ class FactorStore:
         cjpy.<name> → cross_section_by_id (继承非PIT围栏: 默认 PermissionError,
                       allow_nonpit=True 放行+审计落 audit.log)
         htsc.<slug> → cross_section_by_id (华泰智研金工因子, 非PIT围栏同 cjpy)
+        rce.<name> → cross_section_by_id (RCE六因子, PIT-safe 冻结物化无围栏)
         ym: 'YYYY-MM' 或 'YYYYMM'。"""
         ym_s = str(ym)
         ymm = ym_s if "-" in ym_s else f"{ym_s[:4]}-{ym_s[4:]}"
@@ -420,11 +452,11 @@ class FactorStore:
             s = self.cross_section(ymm, [name])[name]
         elif factor_id.startswith(("sw.", "sw2.")):
             s = self._sw_column_series(factor_id.split(".", 1)[1], ymm)
-        elif factor_id.startswith(("cons.", "cjpy.", "htsc.")):
+        elif factor_id.startswith(("cons.", "cjpy.", "htsc.", "rce.")):
             s = self.cross_section_by_id(factor_id, ym_s, allow_nonpit=allow_nonpit)
         else:
             raise NotImplementedError(
-                f"unknown namespace in '{factor_id}' (expect ts./sw./sw2./cons./cjpy./htsc.)")
+                f"unknown namespace in '{factor_id}' (expect ts./sw./sw2./cons./cjpy./htsc./rce.)")
         out = pd.DataFrame({"ts_code": s.index.astype(str), "value": s.to_numpy()})
         return out.sort_values("ts_code", kind="mergesort").reset_index(drop=True)
 

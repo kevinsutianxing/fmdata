@@ -56,3 +56,11 @@ build_factor_catalog.py（生成器，改 catalog 改它勿手改产物；月度
 1. **factor_query sw 路由日历月末坑**：本地 sw 快照锚日历月末（如 2026-10-31 周六），按"最后交易日 10-30"查返 0 行（一年 ~1/5 月份踩空）→ 精确日匹配空则月粒度回退（sw 本就是月度快照，语义正确）
 2. **ts 路由多代码坑**：tushare factor_value 拒绝逗号多代码整单返空 → facade 拆分逐查合并（600519.SH,000001.SZ 实测 2 行）
 3. 同日早前（见 git log）：gfclaw 接入、美股K线备选降级、registry 指针烂修复（daily_basic/etf_monthly_close）、csi_cb_index_daily 死 recipe 禁用
+
+## 六、2026-11-17 RCE 六因子接入（天风金工残余现金收益复现 → 统一因子库）
+
+1. **新增命名空间 rce.（PIT-safe，无围栏）**：`store/factors/rce/{y_gce,s_spread,ds,d_rank,u_sugce,composite}.parquet`，长表 ym(int YYYYMM)/ts_code/value，106 个月 201712→202609（月末 formation 截面，用于下月收益）。源=天风金工 RCE 框架复现（gfclaw 冻结层，post_day 严格 as-of），与 cjpy/htsc 的服务端实时计算不同 → 不设 `_nonpit_guard`。
+2. **存储口径**：五子因子存 raw 水平（回测端去极值+标准化+中信一级+lnMV 中性化）；`composite` 存终值=mean(y_gce,d_rank,u_sugce 三腿中性化残差)+z。manifest.json 含 pit_status/source/convention；coverage.csv 每月覆盖。
+3. **代码改动（各留 .bak.rce-20261117）**：`fmdata/factor_store.py`（+`_RCE_DIR`/`_rce_series`，cross_section_by_id / factor_history_by_id / cross_section_any 加 rce. 分发）；`store/scripts/build_factor_catalog.py`（rce6 源段，catalog 419→425）；`store/scripts/factor_query.py`（facade 加 rce 路由，trade_date 月粒度匹配，输出 trade_date=YYYYMM）。
+4. **验证**：cross_section_any 106/106 月可取；POST /fetch/factor_query(X-API-Key)→GET /data/factor_query 4399 行与 FactorStore 值一致；走库回测（integration/05）composite 超额 9.02%/ICIR 0.76/9 年正超额，与原复现逐月 bit 级一致。
+5. **已知限制（继承自复现基线）**：gfclaw 证券 id 迁移致 2019 前多数股票报表挂内部 id（A 前缀，行情 join 自动剔除）→ 2018 早期覆盖 ~61%（2026-09 达 92%）；U 因子含 Q4 单季 FY 公告前近似；ST 剔除用当前名单全期。

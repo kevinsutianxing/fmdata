@@ -19,12 +19,15 @@
   htsc 华泰智研金工因子(4=3物化+1覆盖不达标pending)
                                    ← factors/htsc/manifest.json+coverage.csv
                                      (2026-11-14 接入:月末截面取数即冻结,非PIT围栏层)
+  rce  天风金工RCE六因子复现(全物化)
+                                   ← factors/rce/manifest.json+coverage.csv
+                                     (2026-11-17 接入:gfclaw冻结层,PIT-safe无围栏)
 
 输出：store/factors/factor_catalog.csv
 列：factor_id,factor_name,source,category_cn,frequency,format,universe,
     history_start,pit_status,query_method,description,warning
 factor_id 命名空间：<source>.<factor_name>（sw.动量 / sw2.EP / ts.size / cons.eps_fg_1y / cjpy.xxx）
-统一查询入口：POST /fetch/factor_query（支持 sw/ts/cons/cjpy 前缀；sw2 走
+统一查询入口：POST /fetch/factor_query（支持 sw/ts/cons/cjpy/rce 前缀；sw2 走
 fmdata.factor_store.FactorStore().sw_panel 或 GET /data/sw_*_monthend_v2 静态端点）。
 原子写：tmp + os.replace。重跑全量覆盖。
 """
@@ -343,6 +346,46 @@ if (HTSC_DIR / "manifest.json").exists():
                 "warning": trunc(f"覆盖不达标未接入({_ent.get('gate','')});快照仅研究参照"),
             })
 
+# ── rce（天风金工RCE六因子复现 2026-11-17 接入：6 全物化）──
+# 源=factors/rce/manifest.json+coverage.csv（gfclaw冻结层本地确定性构建, 月末截面）。
+# PIT-safe: post_day 严格对齐 + 冻结物化(取数即冻结), 无服务端重写 → 不设非PIT围栏。
+RCE_DIR = STORE / "factors/rce"
+RCE_PIT = ("pit_safe:报表冻结层(ticker,cutoff)唯一+首次公告日post_day严格as-of对齐,"
+           "本地物化取数即冻结;formation月末截面用于下月收益;回测可直接使用")
+if (RCE_DIR / "manifest.json").exists():
+    rce_man = json.load(open(RCE_DIR / "manifest.json"))
+    _rce_cov = pd.read_csv(RCE_DIR / "coverage.csv", dtype={"ym": str}) \
+        if (RCE_DIR / "coverage.csv").exists() else pd.DataFrame()
+    for _ent in rce_man.get("factors", []):
+        _fname = _ent["factor"]
+        _cov_desc = ""
+        if not _rce_cov.empty and (_rce_cov.factor == _fname).any():
+            _cr = pd.to_numeric(_rce_cov.loc[_rce_cov.factor == _fname, "coverage"],
+                                errors="coerce").dropna()
+            if len(_cr):
+                _cov_desc = f";elig覆盖min{_cr.min():.3f}/mean{_cr.mean():.3f}"
+        rows.append({
+            "factor_id": f"rce.{_fname}", "factor_name": _fname, "source": "rce",
+            "category_cn": "天风RCE复现因子(已物化)",
+            "frequency": "monthly", "format": "long-parquet",
+            "universe": "全A剔次新/ST/停牌/北交所(金融含,因子值自然缺失)",
+            "history_start": _ent.get("materialized_start", "201712"),
+            "pit_status": RCE_PIT,
+            "query_method": (f"fmdata.factor_store.FactorStore().cross_section_any('rce.{_fname}',"
+                             f"ym)(PIT-safe无围栏) 或 POST /fetch/factor_query "
+                             f"{{'params':{{'factor_id':'rce.{_fname}','trade_date':'YYYYMMDD'}}}}"),
+            "description": trunc(f"天风金工RCE残余现金收益框架复现[{_ent.get('cn_name','')}],"
+                                 f"gfclaw冻结层;"
+                                 f"物化窗{_ent.get('materialized_start','')}..{_ent.get('materialized_end','')}"
+                                 f"共{_ent.get('months_done',0)}月/{_ent.get('rows',0)}行;"
+                                 f"{_ent.get('gate','')}{_cov_desc};"
+                                 f"五子因子=raw水平(回测端去极值+标准化+中信一级+lnMV中性化),"
+                                 f"composite=三腿中性化残差均值+z(终值)"),
+            "warning": ("早期覆盖低(2018~61%,gfclaw证券id迁移致2019前多数股票报表挂内部id),"
+                        "继承自复现基线;U因子含Q4单季FY公告前近似(1个月内边缘);"
+                        "ST剔除用当前名单全期(复现简化)"),
+        })
+
 df = pd.DataFrame(rows, columns=[
     "factor_id", "factor_name", "source", "category_cn", "frequency", "format",
     "universe", "history_start", "pit_status", "query_method", "description", "warning",
@@ -361,4 +404,5 @@ print(f"factor_catalog: {len(df)} factors "
       f"ts={sum(1 for r in rows if r['source']=='ts')}, "
       f"cons={sum(1 for r in rows if r['source']=='cons')}, "
       f"cjpy={sum(1 for r in rows if r['source']=='cjpy')}, "
-      f"htsc={sum(1 for r in rows if r['source']=='htsc')}) -> {OUT_CSV}")
+      f"htsc={sum(1 for r in rows if r['source']=='htsc')}, "
+      f"rce={sum(1 for r in rows if r['source']=='rce')}) -> {OUT_CSV}")

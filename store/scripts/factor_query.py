@@ -15,6 +15,8 @@
   ts.*   ← tushare factor_value 按需直拉（生产脚本上下文，token 走服务 env，
            同 fetch_index_weight_000300 模式；09-14 实测限频宽松 ~6次/s，真瓶颈=试用态每日约1000次）
   cjpy.* ← cjpy.get_factor_data（天软服务端因子，code+date 必填）
+  rce.*  ← 本地长表切片 factors/rce/<name>.parquet（天风RCE六因子复现,月度截面,
+           trade_date 按月粒度 YYYYMM 匹配, PIT-safe 冻结物化;2026-11-17）
 """
 import os
 import sys
@@ -149,8 +151,29 @@ elif src == "cjpy":
     if out is None or out.empty:
         die(f"cjpy 因子 {name!r} 无有效值（因子名不存在，或该证券/日期无数据；天软对未知因子返回 None 列不报错）；有效因子见 /data/factor_catalog source=cjpy")
 
+elif src == "rce":
+    # RCE六因子(2026-11-17): 长表 ym(int YYYYMM)/ts_code/value, 月度 formation 截面。
+    # trade_date 月粒度匹配(YYYYMMDD 取前 6 位;月度快照语义同 sw 2026-11-16 降级)。
+    if not trade_date:
+        die("rce 源需要 trade_date（月度截面, YYYYMMDD 或 YYYYMM）")
+    ym = trade_date[:6]
+    p = STORE / f"factors/rce/{name}.parquet"
+    if not p.exists():
+        die(f"rce 因子未物化: {name}；六因子见 /data/factor_catalog source=rce")
+    df = pd.read_parquet(p, filters=[("ym", "=", int(ym))])
+    if ts_code:
+        df = df[df["ts_code"] == ts_code]
+    if df.empty:
+        die(f"rce.{name} 无数据: ym={ym} ts_code={ts_code or '-'} (window 201712..202609)")
+    out = pd.DataFrame({
+        "factor_name": name,
+        "ts_code": df["ts_code"],
+        "trade_date": df["ym"].astype(str),   # 月度截面 → 输出 YYYYMM
+        "factor_value": df["value"],
+    })
+
 else:
-    die(f"未知源前缀 {src!r}（支持 sw/ts/cons/cjpy）；目录见 /data/factor_catalog")
+    die(f"未知源前缀 {src!r}（支持 sw/ts/cons/cjpy/rce）；目录见 /data/factor_catalog")
 
 OUT_CSV.parent.mkdir(parents=True, exist_ok=True)
 tmp = OUT_CSV.with_suffix(".csv.tmp")
