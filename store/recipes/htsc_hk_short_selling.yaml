@@ -7,7 +7,7 @@ fetch:
   params:
     dataset: htsc_hk_short_selling
   timeout: 900
-file: htsc/htsc_hk_short_selling.csv
+file: data/htsc/htsc_hk_short_selling.csv
 name: htsc_hk_short_selling
 source: htsc_mcp
 update_freq: weekly

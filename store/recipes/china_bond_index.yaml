@@ -1,5 +1,6 @@
 category: market
-description: 中债综合指数(财富)日线行情, 来源akshare bond_zh_cov
+description: [已退役2026-11-17] 历史实为可转债申购表(非中债指数,原描述错误); 源函数bond_zh_cov已被akshare移除, 零消费者, 数据留档
+_auto_fetch: false
 update_freq: daily
 fetch:
   proxy: direct

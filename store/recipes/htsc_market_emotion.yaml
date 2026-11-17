@@ -7,7 +7,7 @@ fetch:
   params:
     dataset: htsc_market_emotion
   timeout: 900
-file: htsc/htsc_market_emotion.csv
+file: data/htsc/htsc_market_emotion.csv
 name: htsc_market_emotion
 source: htsc_mcp
 update_freq: weekly

@@ -7,7 +7,7 @@ fetch:
     bullish_consensus: true
     limit: 20
   timeout: 300
-file: sw/sw_tech_screen.csv
+file: data/sw/sw_tech_screen.csv
 name: sw_tech_screen
 source: sw_mcp
 update_freq: daily

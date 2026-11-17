@@ -825,6 +825,26 @@ def audit_daily_freshness(send_alert=True):
     # 2026-11-16: daily 走交易日感知门槛; weekly/monthly 按 freq 分档固定阈值
     # (weekly 9d 容错=刷新窗 Sat/Sun+一周; monthly 45d=SW 服务端滞后可超 38d)
     FREQ_FLOOR_H = {"daily": None, "weekly": 9 * 24, "monthly": 45 * 24}
+    # 美股收盘源: 写入时刻=美股收盘(05:30 CST)后次晨拉取(~06:0x CST), A股傍晚门槛在
+    # 周二凌晨审计必见"周六早晨写入"→假阳性(2026-11-17 实证 cboe 70h/moomoo 69h,
+    # 但周一盘数据物理上要到周二 06:50 才存在)。放宽 36h: 周末假阳清零,
+    # 断档检测延迟一天(仍远小于周级护栏, 可接受)。
+    US_CLOSE_BAND_SOURCES = {"cboe_iv_surface", "moomoo_iv_history"}
+
+    # 2026-11-17: /status 的 file 字段是 store 扫描产物, 会被同名陈旧副本遮蔽
+    # (实证: daily_basic 被 chip_window_20250701_20260930/ 冻结快照遮蔽报 665h 假stale;
+    #  etf_monthly_close 被 etf_data/ 6月死副本遮蔽报 3814h)。recipe yaml 顶层 file:
+    # 是 fmdata 实际写盘路径(唯一真值), 优先之; 无声明/解析失败回退 /status。
+    def _recipe_file(name):
+        try:
+            with open(os.path.join(store, "recipes", f"{name}.yaml")) as f:
+                for line in f:
+                    m = re.match(r"^file:\s*(\S+)", line)
+                    if m:
+                        return m.group(1)
+        except OSError:
+            pass
+        return None
     for name, info in recipes.items():
         freq = info.get("update_freq")
         if freq not in FREQ_FLOOR_H:
@@ -838,7 +858,7 @@ def audit_daily_freshness(send_alert=True):
         if name in UPSTREAM_PACED_MONTHLY:
             log(f"  ⏭ {name}: 上游节奏型月度源, 跳过 mtime 判定(内容新鲜度由上游决定)")
             continue
-        rel = status.get(name, {}).get("file", "")
+        rel = _recipe_file(name) or status.get(name, {}).get("file", "")
         if not rel:
             if freq == "daily":
                 no_file += 1
@@ -849,6 +869,8 @@ def audit_daily_freshness(send_alert=True):
             stale.append((name, None))  # 声称有产出但文件都不存在
             continue
         _floor = floor if freq == "daily" else now - FREQ_FLOOR_H[freq] * 3600
+        if name in US_CLOSE_BAND_SOURCES:
+            _floor -= 36 * 3600
         if os.path.getmtime(path) < _floor:
             stale.append((f"{name}({freq})", (now - os.path.getmtime(path)) / 3600))
 
@@ -874,7 +896,7 @@ def audit_daily_freshness(send_alert=True):
         try:
             subprocess.run(
                 ["bash", os.path.join(HOME, ".openclaw", "scripts", "send_feishu_alert.sh"),
-                 "fmdata日更审计", f"🔴 {len(stale)} 个日更数据源过期(>{STALE_HOURS}h):\n{detail}", "warning"],
+                 "fmdata日更审计", f"🔴 {len(stale)} 个日更数据源过期(超新鲜度门槛):\n{detail}", "warning"],
                 capture_output=True, timeout=60)
             log(f"  已发飞书告警({len(stale)} stale)")
         except Exception as e:
