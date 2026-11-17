@@ -433,7 +433,7 @@ def _industry_of(ts: str, c6: str, as_of: str) -> dict | None:
 
 
 def _sec_industry(ts: str, c6: str, as_of: str) -> dict[str, Any]:
-    src = ["sw_industry_pts", "sw_first_level_close", "sw_pe_history", "sw_pb_history", "sw_main_flow_net"]
+    src = ["sw_industry_pts", "sw_first_level_close", "sw_pe_history", "sw_pb_history", "soochow_industry_flow"]
     row = _industry_of(ts, c6, as_of)
     if not row:
         return _empty(src, f"no PIT industry mapping for {ts}")

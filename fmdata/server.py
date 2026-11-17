@@ -667,6 +667,23 @@ def get_sw_pb():
     return _df_to_json(sw_pb_history())
 
 
+@app.get("/market/soochow-industry-flow")
+def get_soochow_industry_flow(level: str = Query("L1", description="L1(31行业)/L2(124行业)")):
+    """东吴·申万行业资金流逐日截面(长表, Wind 口径; EM 主力口径的并存新源)。
+
+    🔴 近5日/近20日列为服务端滚动窗, 禁回测拼接。
+    """
+    from fmdata.market import soochow_industry_flow
+    return _df_to_json(soochow_industry_flow(level))
+
+
+@app.get("/market/soochow-industry-flow-wide")
+def get_soochow_industry_flow_wide(metric: str = Query("net", description="net=近1日净流入额(亿元)/pct=近1日净流入额占比(%)")):
+    """东吴·申万一级行业资金流宽表(date × 行业), 形状对齐 sw-main-flow 便于平移。"""
+    from fmdata.market import soochow_industry_flow_wide
+    return _df_to_json(soochow_industry_flow_wide(metric))
+
+
 @app.get("/market/hs300")
 def get_hs300(freq: str = Query("daily")):
     from fmdata.market import hs300

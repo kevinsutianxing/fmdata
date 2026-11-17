@@ -48,9 +48,46 @@ OUT = STORE_DIR / "market/index_global_monitor_em.csv"
 LMT_INCREMENTAL = "60"     # 最近 60 根日线
 LMT_FULL = "50000"         # 全历史(东财 kline 上限, 从上市给起)
 
+# 2026-11-17 主通道切 westock data_kline(QG 止血, 五指数零代理消耗; 港指当日棒晨间即有)。
+# SOX westock 无码(502 实测多码型)仍走东财 push2his+datacenter。
+WESTOCK_CODES = {"NDX": "usNDX", "HSTECH": "hkHSTECH", "HSCEI": "hkHSCEI",
+                 "HSI": "hkHSI", "VHSI": "hkVHSI"}
+
+
+def _westock_kline(ts_code, lmt):
+    """westock 日K → DataFrame[date/open/high/low/close/volume/amount/name]。
+
+    返回形状与 EM fetch_one 对齐(main 只消费这些列); name 用 SECIDS 静态中文名
+    (westock kline 无名字段, 代码显式无 secid 漂移风险); close 量级防线仍在 main。
+    """
+    import json
+    import urllib.request
+    import pandas as pd
+    req = urllib.request.Request(
+        "http://127.0.0.1:1934/fetch/westock_query",
+        data=json.dumps({"params": {"tool": "data_kline", "codes": WESTOCK_CODES[ts_code],
+                                    "period": "day", "count": int(lmt)}}).encode(),
+        headers={"Content-Type": "application/json"})
+    body = json.loads(urllib.request.urlopen(req, timeout=90).read())
+    if body.get("status") != "ok":
+        raise RuntimeError(f"{ts_code} westock fetch status={body.get('status')}")
+    with urllib.request.urlopen("http://127.0.0.1:1934/data/westock_query", timeout=30) as r:
+        rows = [x for x in json.loads(r.read()).get("data", []) if x.get("date")]
+    if not rows:
+        raise RuntimeError(f"{ts_code} westock no klines")
+    rows.sort(key=lambda x: x["date"])
+    df = pd.DataFrame([{
+        "date": x["date"], "open": x.get("open"), "high": x.get("high"),
+        "low": x.get("low"), "close": x.get("last"), "volume": x.get("volume") or 0,
+        "amount": x.get("amount")} for x in rows])
+    df["name"] = SECIDS[ts_code][1]
+    return df
+
 
 def fetch_one(ts_code, secid, lmt):
     """单指数 kline 拉取 → DataFrame(date/open/high/low/close/volume/amount/name)。"""
+    if ts_code in WESTOCK_CODES:
+        return _westock_kline(ts_code, lmt)
     from fmdata.recipe_fetcher import eastmoney_get
     js = eastmoney_get(KLINE_URL, {
         "secid": secid, "klt": "101", "fqt": "0", "lmt": lmt, "end": "20500000",
@@ -147,7 +184,7 @@ def main():
             "volume": pd.to_numeric(df["volume"], errors="coerce"),
             "amount": pd.to_numeric(df["amount"], errors="coerce"),
             "name": df["name"],
-            "source": "em_kline",
+            "source": "westock_kline" if ts_code in WESTOCK_CODES else "em_kline",
         })
         closes = out["close"].dropna()
         bad = (~closes.between(lo, hi)).mean() if len(closes) else 1.0

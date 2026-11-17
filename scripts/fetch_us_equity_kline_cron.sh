@@ -9,7 +9,7 @@
 # cron(06:15/15:25): flock -n /tmp/fetch_us_equity_kline.lock bash 本脚本 >> 日志 || 飞书告警
 # 测试钩子: FUEK_CMD 可覆盖为 stub(勿用于生产)。
 export TZ=Asia/Shanghai
-FUEK_CMD=${FUEK_CMD:-python3 /home/ubuntu/fmdata/scripts/fetch_us_equity_kline.py}
+FUEK_CMD=${FUEK_CMD:-python3 /home/ubuntu/fmdata/scripts/fetch_us_equity_kline_westock.py}
 FALLBACK_CMD="python3 /home/ubuntu/fmdata/scripts/fetch_us_equity_kline_fallback.py"
 LASTLOG=/tmp/fuek_last_run.log
 

@@ -183,7 +183,12 @@ def fetch_money(mc: MCP, want_dates=None, lookback=10):
     if want_dates:
         avail = [d for d in avail if d in set(want_dates)]
     avail = sorted(avail)[-lookback:]
-    have = existing_dates("soochow_etf_flow.csv")
+    # 对账锚=四张产出表的日期交集(2026-11-17 加固): 单表锚有"部分写入→窗口滑走→
+    # 永久失忆"风险(Excel 仅留10日窗, 错过即失)——只有全部表都有的日期才算已收割。
+    have = (existing_dates("soochow_etf_flow.csv")
+            & existing_dates("soochow_stock_flow.csv")
+            & existing_dates("soochow_industry_flow.csv")
+            & existing_dates("soochow_etf_flow_agg.csv"))
     todo = [d for d in avail if d not in have]
     log(f"money: 可用{len(avail)}期, 本地已有{len(have)}, 待拉{len(todo)}")
     stats = {}

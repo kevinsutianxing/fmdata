@@ -29,6 +29,8 @@ from fmdata.market import (
     sw_pb_history,
     sw_main_flow_net,
     sw_main_flow_pct,
+    soochow_industry_flow,
+    soochow_industry_flow_wide,
     hs300,
     tech_indicators,
     turnover_matrix,

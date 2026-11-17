@@ -75,6 +75,38 @@ def sw_main_flow_pct() -> pd.DataFrame:
     return _load_csv("sw_main_flow_pct")
 
 
+# ---- 东吴·申万行业资金流(2026-11-17 并存迁移: EM 主力口径冻结, 本族为新主推) ----
+
+def soochow_industry_flow(level: str = "L1") -> pd.DataFrame:
+    """东吴宏观·申万行业资金流逐日截面(长表; L1=31 行业 / L2=124 行业, Wind 口径)。
+
+    与 EM sw_main_flow_* 的「主力资金流」口径不同 vendor 定义, 属并存新数据集非等价替换。
+    单位: 亿元/百分比。🔴 近5日/近20日列是服务端滚动窗, 禁回测拼接(回测用近1日列自算)。
+    历史 = 原始 Excel 10 日窗滚动积累(2026-10-26 起); cron 19:15+07:40 自愈补拉。
+    """
+    df = _load_csv("soochow_industry_flow")
+    if df.empty:
+        return df
+    return df[df["level"] == level].copy()
+
+
+def soochow_industry_flow_wide(metric: str = "net") -> pd.DataFrame:
+    """宽表 date × 申万一级行业(仅 L1), 形状对齐 sw_main_flow_net/pct 便于消费方平移。
+
+    metric: "net"=近1个交易日净流入额(亿元); "pct"=近1个交易日净流入额占比(%)。
+    """
+    df = soochow_industry_flow("L1")
+    if df.empty:
+        return df
+    col = ("近1个交易日净流入额(亿元)" if metric == "net"
+           else "近1个交易日净流入额占比(%)")
+    if col not in df.columns:
+        raise ValueError(f"metric={metric} 无对应列({col})")
+    wide = df.pivot_table(index="data_date", columns="申万一级行业",
+                          values=col, aggfunc="first")
+    return wide.sort_index().reset_index()
+
+
 # ---- Benchmark ----
 
 def hs300(freq="daily") -> pd.DataFrame:

@@ -5,7 +5,7 @@ fetch:
   func: money_excel
   params: {}
   timeout: 1800
-file: soochow/soochow_industry_flow.csv
+file: data/soochow/soochow_industry_flow.csv
 name: soochow_industry_flow
 source: soochow_mcp
 update_freq: daily
