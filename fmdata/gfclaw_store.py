@@ -161,21 +161,29 @@ def query(
         table_arrow = dataset.head(hard_limit)
         total_rows = None
     else:
-        from pyarrow import compute as pc
-        table_arrow = dataset.to_table()
-        mask = None
+        # 行/列过滤下推到 parquet scanner(2026-11-18 事故修复):
+        # 旧实现 dataset.to_table() 先全量物化再内存 mask——大表(ana_rolling 9.1G /
+        # ana_snap 2.3G)无 start 查询会把 RSS 顶穿 cgroup memory.high,throttle
+        # 风暴致全服务假死(/status 也无响应),只能重启。scanner 下推让 IO 层
+        # 按 row-group 统计跳过无关数据块,列投影避免全列读取;语义与旧 mask
+        # 完全等价(同 cast 字符串后比较)。
+        expr = None
         if dcol and (start or end):
-            dvals = pc.cast(table_arrow[dcol], "string")
+            fld = pads.field(dcol).cast("string")
             if start:
-                mask = pc.greater_equal(dvals, start)
+                expr = fld >= pads.scalar(start)
             if end:
-                m2 = pc.less_equal(dvals, end)
-                mask = m2 if mask is None else pc.and_(mask, m2)
+                m2 = fld <= pads.scalar(end)
+                expr = m2 if expr is None else expr & m2
         if ticker_id is not None and "ticker_id" in schema_names:
-            m3 = pc.equal(pc.cast(table_arrow["ticker_id"], "string"), str(ticker_id))
-            mask = m3 if mask is None else pc.and_(mask, m3)
-        if mask is not None:
-            table_arrow = table_arrow.filter(mask)
+            m3 = pads.field("ticker_id").cast("string") == pads.scalar(str(ticker_id))
+            expr = m3 if expr is None else expr & m3
+        proj = None
+        if columns:
+            _cols = [c for c in columns if c in schema_names]
+            if _cols:
+                proj = _cols + ([dcol] if dcol and dcol not in _cols else [])
+        table_arrow = dataset.scanner(columns=proj, filter=expr).to_table()
         total_rows = table_arrow.num_rows
 
     if columns:
