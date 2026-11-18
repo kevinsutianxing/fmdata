@@ -429,7 +429,26 @@ def get_dataset_data(
                 "message": "file >64MB; add ?limit=N for head rows or ?full=true to dump all "
                            "(may OOM the 3.6G host — prefer reading the CSV directly)",
             })
-        df = pd.read_csv(file_path, nrows=limit) if limit else pd.read_csv(file_path)
+        # parquet 优先(2026-11-18):store 有同名 .parquet 且不比 CSV 旧(mtime>=)时读 parquet,
+        # zstd 列式通常快 3-10x;mtime 校验保证 auto-refresh 刷新 CSV 后旧 parquet 自动
+        # 失效回退 CSV,永不出陈旧数据。读失败自动回退 CSV,零破坏。
+        pq_path = file_path.with_suffix(".parquet")
+        read_path = file_path
+        if pq_path.is_file() and pq_path.stat().st_mtime >= file_path.stat().st_mtime:
+            read_path = pq_path
+        try:
+            if str(read_path).endswith(".parquet"):
+                if limit:
+                    df = pd.read_parquet(read_path).head(int(limit))
+                else:
+                    df = pd.read_parquet(read_path)
+            else:
+                df = pd.read_csv(read_path, nrows=limit) if limit else pd.read_csv(read_path)
+        except Exception:
+            if read_path != file_path:  # parquet 损坏/不兼容 → 回退 CSV
+                df = pd.read_csv(file_path, nrows=limit) if limit else pd.read_csv(file_path)
+            else:
+                raise
         return _df_to_json(df, allow_oversize=full)
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": f"failed to read {name}: {str(e)}"})
