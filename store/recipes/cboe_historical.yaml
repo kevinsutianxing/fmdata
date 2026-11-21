@@ -1,0 +1,10 @@
+name: cboe_historical
+category: overseas
+description: "美股个股/ETF/指数日线全史 (Cboe delayed_quotes/charts/historical) — 42标的(36股/ETF + 指数_RUT/_SPX/_VIX/_VXN/_SKEW/_VVIX, 下划线=CBOE原生命名); 未复权OHLCV原始bar(🔴假日幻影/坏bar原样保留,NYSE日历/坏bar注册表/拆股由消费端GVRM清洗), 幂等累计表按(symbol,date)upsert(后抓覆盖,CBOE修正会传播); 2026-11-21起GVRM统一日线源(直连退役为手动补数); cron 06:09/22:33(周二~六)"
+file: market/cboe_historical/cboe_historical_summary.csv
+source: agent
+update_freq: daily
+fetch:
+  func: agent
+  command: "python3 /home/ubuntu/fmdata/store/scripts/fetch_cboe_historical.py"
+  timeout: 1200
