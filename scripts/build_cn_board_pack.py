@@ -65,14 +65,22 @@ def build_pack():
         lim = pd.read_csv(ROOT / "market/ashare_limit_list.csv", dtype=str)
         lim = lim[lim["ts_code"].notna() & (lim["ts_code"] != "")]
         d = str(sorted(lim["trade_date"].unique())[-1])
-        # 🔴2026-11-21 新鲜度熔断: 涨停板数据落后指数 >3 天 = 管线断流(11-12~11-20 曾静默断10天,
-        # pack_errors 为空致看板无感)。指数同一脚本落地, 二者正常同日; 只有 limit 管线断才会发散。
+        # 🔴2026-11-21 新鲜度熔断: 涨停板数据落后参照系 >3 天 = 管线断流(11-12~11-20 曾静默断10天,
+        # pack_errors 为空致看板无感)。参照系取 max(指数数据, 东吴复盘日期):
+        # 指数与涨停板同一 tushare 脚本落地(单管线断→发散); 东吴是独立源, 防 tushare 整体死时
+        # 两者同停的盲区(东吴自身滞后1-2交易日合法, 3天容差已覆盖)。
         _idx_probe = pd.read_csv(ROOT / "market/ashare_index_brief.csv", dtype={"trade_date": str})
-        _idx_max = str(sorted(_idx_probe["trade_date"].unique())[-1])
-        _lag_days = (datetime.strptime(_idx_max, "%Y%m%d") - datetime.strptime(d, "%Y%m%d")).days
+        _ref = str(sorted(_idx_probe["trade_date"].unique())[-1])
+        try:
+            _sc = pd.read_csv(ROOT / "soochow/soochow_daily_review.csv")
+            _sc_max = str(sorted(_sc["date"].astype(str))[-1]).replace("-", "")
+            _ref = max(_ref, _sc_max)
+        except Exception:
+            pass  # 东吴文件缺失不阻断, 退回指数单参照
+        _lag_days = (datetime.strptime(_ref, "%Y%m%d") - datetime.strptime(d, "%Y%m%d")).days
         stale = _lag_days > 3
         if stale:
-            errors["recap_local"] = f"数据过期: as_of={d} 落后指数数据({_idx_max}) {_lag_days} 天, 晨会板盘面数字不可信"
+            errors["recap_local"] = f"数据过期: as_of={d} 落后参照({_ref}) {_lag_days} 天, 晨会板盘面数字不可信"
         day = lim[lim["trade_date"] == d]
         u = day[day["limit_type"] == "U"].copy()
         u["lt"] = u["limit_times"].astype(float)
@@ -424,6 +432,10 @@ def main():
     size = out.stat().st_size
     print(f"[{now_cst()}] pack {out} {size/1024:.0f}KB blocks={sorted(pack['blocks'])} "
           f"errors={pack['errors'] or '无'}", flush=True)
+    # 🔴2026-11-21晚: errors 非空时退出码=1, 让 cron 的 || send_feishu_alert 能触发——
+    # 原来恒 exit 0, fail-open 块失败/新鲜度熔断只写 pack 无人被叫醒(11-12~11-20 断流的教训)。
+    if pack["errors"]:
+        sys.exit(1)
 
 
 if __name__ == "__main__":
