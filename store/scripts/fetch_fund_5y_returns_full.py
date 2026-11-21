@@ -2,7 +2,8 @@
 """Fetch full 5Y cumulative return curves for target fund universe.
 
 Inputs are fmdata fund rank tables plus fund_basic_open. Outputs:
-- market/fund_5y_nav_full/{code}.csv: raw cumulative return curve per fund
+- market/fund_5y_nav_full.parquet: 单 parquet 收编全部 per-fund 曲线(2026-11-21 起,
+  原 1.45 万个 fund_5y_nav_full/{code}.csv 已收编, 幂等缓存语义不变)
 - market/fund_5y_return_full.csv: one-row summary per fund
 - market/fund_5y_return_failures.csv: failed funds for reruns
 """
@@ -13,6 +14,7 @@ import concurrent.futures as futures
 import json
 import math
 import re
+import threading
 import time
 from datetime import datetime
 from pathlib import Path
@@ -24,7 +26,7 @@ import pandas as pd
 
 BASE = Path("/home/ubuntu/fmdata/store/market")
 BASIC_PATH = BASE / "fund_basic_open.csv"
-NAV_DIR = BASE / "fund_5y_nav_full"
+NAV_CACHE = BASE / "fund_5y_nav_full.parquet"
 SUMMARY_PATH = BASE / "fund_5y_return_full.csv"
 FAIL_PATH = BASE / "fund_5y_return_failures.csv"
 UNIVERSE_PATH = BASE / "fund_5y_universe.csv"
@@ -77,13 +79,26 @@ def build_universe() -> pd.DataFrame:
         frames.append(merged)
     uni = pd.concat(frames, ignore_index=True)
     uni = uni.drop_duplicates(["category", "code6"])
-    NAV_DIR.mkdir(parents=True, exist_ok=True)
     uni.to_csv(UNIVERSE_PATH, index=False)
     return uni
 
 
-def raw_path(code: str) -> Path:
-    return NAV_DIR / f"{code}.csv"
+def flush_cache(cache: dict, new_curves: list, lock: threading.Lock) -> None:
+    """把本批新拉曲线合并进单 parquet(同 code 取最新, tmp+replace 原子写)."""
+    with lock:
+        snapshot, new_curves[:] = list(new_curves), []
+    if not snapshot:
+        return
+    add = pd.concat([df.assign(fund_code=c) for c, df in snapshot], ignore_index=True)
+    if NAV_CACHE.exists():
+        old = pd.read_parquet(NAV_CACHE)
+        old = old[~old["fund_code"].isin(add["fund_code"].unique())]
+        add = pd.concat([old, add], ignore_index=True)
+    tmp = NAV_CACHE.with_suffix(".tmp.parquet")
+    add.to_parquet(tmp, index=False, compression="zstd")
+    tmp.replace(NAV_CACHE)
+    for c, df in snapshot:
+        cache[c] = df.reset_index(drop=True)
 
 
 def summarize_curve(code: str, category: str, df: pd.DataFrame, source: str) -> dict:
@@ -115,19 +130,20 @@ def summarize_curve(code: str, category: str, df: pd.DataFrame, source: str) -> 
     }
 
 
-def fetch_one(item: tuple[str, str], force: bool = False, sleep: float = 0.0) -> tuple[dict | None, dict | None]:
+def fetch_one(item: tuple[str, str], force: bool = False, sleep: float = 0.0,
+              cache: dict | None = None, new_curves: list | None = None,
+              lock: threading.Lock | None = None) -> tuple[dict | None, dict | None]:
     category, code = item
-    path = raw_path(code)
     try:
-        if path.exists() and not force:
-            df = pd.read_csv(path)
-            return summarize_curve(code, category, df, "cache"), None
+        if not force and cache is not None and code in cache:
+            return summarize_curve(code, category, cache[code], "cache"), None
         if sleep:
             time.sleep(sleep)
         df = ak.fund_open_fund_info_em(symbol=code, indicator="累计收益率走势", period="5年")
         if df is None or df.empty:
             raise ValueError("akshare returned empty data")
-        df.to_csv(path, index=False)
+        with lock:
+            new_curves.append((code, df[["日期", "累计收益率"]].copy()))
         return summarize_curve(code, category, df, "akshare"), None
     except Exception as exc:
         return None, {
@@ -165,8 +181,16 @@ def main() -> None:
     failures: list[dict] = []
     done = ok = fail = 0
 
+    cache: dict[str, pd.DataFrame] = {}
+    if NAV_CACHE.exists():
+        _all = pd.read_parquet(NAV_CACHE, columns=["fund_code", "日期", "累计收益率"])
+        cache = {c: g.reset_index(drop=True) for c, g in _all.groupby("fund_code")}
+        print(f"nav cache: {len(cache)} funds from parquet", flush=True)
+    new_curves: list[tuple[str, pd.DataFrame]] = []
+    lock = threading.Lock()
+
     with futures.ThreadPoolExecutor(max_workers=args.workers) as ex:
-        futs = [ex.submit(fetch_one, item, args.force, args.sleep) for item in items]
+        futs = [ex.submit(fetch_one, item, args.force, args.sleep, cache, new_curves, lock) for item in items]
         for fut in futures.as_completed(futs):
             res, err = fut.result()
             done += 1
@@ -180,8 +204,11 @@ def main() -> None:
                 pd.DataFrame(results).to_csv(SUMMARY_PATH, index=False)
                 pd.DataFrame(failures).to_csv(FAIL_PATH, index=False)
                 write_progress(done, total, ok, fail)
+                if done % 2000 == 0 and new_curves:
+                    flush_cache(cache, new_curves, lock)
                 print(f"progress {done}/{total} ok={ok} fail={fail}", flush=True)
 
+    flush_cache(cache, new_curves, lock)
     pd.DataFrame(results).to_csv(SUMMARY_PATH, index=False)
     pd.DataFrame(failures).to_csv(FAIL_PATH, index=False)
     write_progress(done, total, ok, fail)
