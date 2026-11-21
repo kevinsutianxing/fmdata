@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 """Cboe 延迟期权链快照 → 个股/ETF IV surface 数据集 (cboe_iv_surface).
 
-数据源: https://cdn.cboe.com/api/global/delayed_quotes/options/<TICKER>.json
+数据源: https://cdn-api.cboe.com/api/global/delayed_quotes/options/<TICKER>.json
   - 免费无授权 (延迟报价, 15min 延迟档)
   - 🔴 延迟报价无历史 → 本脚本每次取数即冻结快照归档 (PIT 由归档构造)
+  - 2026-11-21 Cboe 迁移: cdn.cboe.com 307→cdn-api.cboe.com, 旧链落入 Cloudflare
+    challenge 全量 403 (11-19/11-20 已部分失败, 11-21 全灭)。新 host 必须带
+    Referer: https://www.cboe.com/ (无 Referer 一律 403, UA 无关)。
+    备份: ~/config-backups/fetch_cboe_iv_surface.py.bak.cdnapi-20261121
 
 产出 (STORE/market/cboe_iv_surface/):
   raw/<TICKER>_<YYYYMMDD>.json.gz   原始链归档 (observed_at 纪律的正本)
@@ -39,8 +43,12 @@ import urllib.request
 from pathlib import Path
 
 STORE = Path("/home/ubuntu/fmdata/store/market/cboe_iv_surface")
-BASE_URL = "https://cdn.cboe.com/api/global/delayed_quotes/options/{}.json"
-UA = "Mozilla/5.0 fmdata-cboe-iv-surface/1.0"
+BASE_URL = "https://cdn-api.cboe.com/api/global/delayed_quotes/options/{}.json"
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 fmdata-cboe-iv-surface/1.0",
+    "Referer": "https://www.cboe.com/",  # 🔴无此头一律 403 (cdn-api Cloudflare, 2026-11-21)
+    "Accept": "application/json",
+}
 DEFAULT_TICKERS = [
     # 6 ETF
     "SPY", "QQQ", "IWM", "SOXQ", "SMH", "XLK",
@@ -71,7 +79,7 @@ def fetch_chain(ticker: str, timeout: int = 60, retries: int = 2) -> dict:
         last_err = None
         for attempt in range(retries):
             try:
-                req = urllib.request.Request(BASE_URL.format(sym), headers={"User-Agent": UA})
+                req = urllib.request.Request(BASE_URL.format(sym), headers=HEADERS)
                 with urllib.request.urlopen(req, timeout=timeout) as resp:
                     payload = json.loads(resp.read().decode("utf-8"))
                 opts = payload.get("data", {}).get("options", [])
@@ -227,7 +235,7 @@ def main() -> int:
         print(f"[{i}/{len(tickers)}] {ticker}: close={payload['data'].get('close')} "
               f"iv30={payload['data'].get('iv30')} expiries_used={n_exp} rows={len(rows)} "
               f"raw={raw_path.name} ({raw_path.stat().st_size // 1024}KB)")
-        time.sleep(0.6)
+        time.sleep(1.5)  # 2026-11-21: cdn-api 走 Cloudflare, 放缓节奏 (11-19/11-20 渐进式限流的教训)
 
     if not all_rows:
         print("ERROR: zero rows aggregated", file=sys.stderr)
