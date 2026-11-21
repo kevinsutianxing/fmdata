@@ -65,6 +65,14 @@ def build_pack():
         lim = pd.read_csv(ROOT / "market/ashare_limit_list.csv", dtype=str)
         lim = lim[lim["ts_code"].notna() & (lim["ts_code"] != "")]
         d = str(sorted(lim["trade_date"].unique())[-1])
+        # 🔴2026-11-21 新鲜度熔断: 涨停板数据落后指数 >3 天 = 管线断流(11-12~11-20 曾静默断10天,
+        # pack_errors 为空致看板无感)。指数同一脚本落地, 二者正常同日; 只有 limit 管线断才会发散。
+        _idx_probe = pd.read_csv(ROOT / "market/ashare_index_brief.csv", dtype={"trade_date": str})
+        _idx_max = str(sorted(_idx_probe["trade_date"].unique())[-1])
+        _lag_days = (datetime.strptime(_idx_max, "%Y%m%d") - datetime.strptime(d, "%Y%m%d")).days
+        stale = _lag_days > 3
+        if stale:
+            errors["recap_local"] = f"数据过期: as_of={d} 落后指数数据({_idx_max}) {_lag_days} 天, 晨会板盘面数字不可信"
         day = lim[lim["trade_date"] == d]
         u = day[day["limit_type"] == "U"].copy()
         u["lt"] = u["limit_times"].astype(float)
@@ -101,7 +109,7 @@ def build_pack():
                           "limit_up": int(len(tday[tday["limit_type"] == "U"])),
                           "limit_down": int(len(tday[tday["limit_type"] == "D"])),
                           "limit_broken": int(len(tday[tday["limit_type"] == "Z"]))})
-        return {"as_of": f"{d[:4]}-{d[4:6]}-{d[6:8]}", "trend": trend,
+        return {"as_of": f"{d[:4]}-{d[4:6]}-{d[6:8]}", "stale": stale, "trend": trend,
                 "limit_up": int(len(u)), "limit_down": int(len(dd)),
                 "limit_broken": int(len(z)),
                 "first_board": int((u["lt"] == 1).sum()),

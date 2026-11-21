@@ -97,17 +97,26 @@ def main():
     pro = ts.pro_api(env["TUSHARE_TOKEN"])
     today = datetime.now(CST).strftime("%Y%m%d")
 
+    # 🔴2026-11-21 自愈改造: 无 --date 时不止拉当日——扫近5个交易日,凡缺真实数据行
+    # (U 无非空 ts_code)的日子全部补拉。动机: tushare limit_list_d 发布晚于17:05,
+    # 晚班空返写空标记后,原逻辑次日只拉"当日"(开盘前必空),洞永不自愈(11-12~11-20 断流10天)。
     if args.date:
-        td = args.date
+        targets = [args.date]
     else:
         cal = pro.trade_cal(exchange="SSE", is_open="1",
                             start=(datetime.now(CST) - timedelta(days=15)).strftime("%Y%m%d"),
                             end=today)
         # trade_cal 的 end 过滤不可靠(会返回未来年份日历), 必须显式截断
-        td = str(cal[cal["cal_date"] <= today]["cal_date"].max())
-    log(f"目标交易日: {td}")
+        open_days = sorted(cal[cal["cal_date"] <= today]["cal_date"].astype(str))[-5:]
+        _probe = pd.read_csv(STORE / "ashare_limit_list.csv", dtype=str) if (STORE / "ashare_limit_list.csv").exists() else pd.DataFrame(columns=["trade_date", "limit_type", "ts_code"])
+        _real_dates = set(_probe[_probe["ts_code"].notna() & (_probe["ts_code"] != "")]["trade_date"])
+        targets = [d for d in open_days if d not in _real_dates]
+    for td in targets:
+        _run_day(pro, td)
 
-    # ── 涨跌停/炸板 ──
+
+def _run_day(pro, td):
+    log(f"目标交易日: {td}")
     # 🔴2026-11-12 修复: have 只认非空数据行——空标记行(ts_code为空)不算"已有",
     # 否则 07:45 晨班写的标记会挡住 17:05 晚班的正式填充(11-11 即因此缺数)。
     _lim_all = pd.read_csv(STORE / "ashare_limit_list.csv", dtype=str) if (STORE / "ashare_limit_list.csv").exists() else pd.DataFrame(columns=["trade_date", "limit_type", "ts_code"])
@@ -134,7 +143,7 @@ def main():
         _mask = (_lim_all["trade_date"] == td) & (_lim_all["limit_type"] == lt) & (_lim_all["ts_code"].isna() | (_lim_all["ts_code"] == "") | _lim_all["ts_code"].isnull())
         if _mask.any():
             _lim_all = _lim_all[~_mask]
-            _lim_all.to_csv(STORE / "market/ashare_limit_list.csv", index=False)
+            _lim_all.to_csv(STORE / "ashare_limit_list.csv", index=False)  # 🔴2026-11-21 修复:原"market/..."双重目录必崩,致空标记永远清不掉
             log(f"  limit {lt}: 清除旧空标记 {_mask.sum()} 行")
         n += append_csv(df[keep], "ashare_limit_list.csv")
         log(f"  limit {lt}: +{len(df)} 行")
