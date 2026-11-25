@@ -15,6 +15,8 @@ import pandas as pd
 MCP_URL = 'https://mxapi.eastmoney.com/mxds/mcp'
 KEY_FILE = os.path.expanduser('~/.fmdata_mx_key')
 C_CSV = '/home/ubuntu/fmdata/store/reference/etf_pcf_components.csv'
+STREAK_FILE = os.path.expanduser('~/fmdata/logs/.pcf_sz_empty_streak')
+EMPTY_ALERT_STREAK = 2  # 连续空返回达到该次数才 exit 1(触发 cron 飞书告警); 2026-11-25 修 SZ3-004
 
 ACTIVE_ETF_WATCHLIST_SZ = {
     # 'XXXXXX': '南方均衡配置主动ETF',
@@ -114,6 +116,23 @@ def parse_mx_pcf(text):
             'redemption_discount_rate': None, 'active_etf': False})
     return trade_date, rows
 
+def update_empty_streak(empty, path=STREAK_FILE):
+    """连续空返回计数: empty=True 累加, False 清零。返回累计次数(持久化跨 cron 次)。"""
+    try:
+        with open(path) as f:
+            n = int(f.read().strip() or 0)
+    except (FileNotFoundError, ValueError):
+        n = 0
+    n = n + 1 if empty else 0
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'w') as f:
+            f.write(str(n))
+    except OSError as e:
+        print(f'warn: cannot persist streak: {e}')
+    return n
+
+
 def main():
     args = sys.argv[1:]
     codes = args if args else (list(ACTIVE_ETF_WATCHLIST_SZ) or DEFAULT_WATCH)
@@ -136,7 +155,13 @@ def main():
         print(f'{code}: {td} {len(rows)} components')
         time.sleep(2)
     if not all_rows:
-        print('no rows'); return
+        streak = update_empty_streak(True)
+        print(f'no rows (consecutive empty runs={streak})')
+        if streak >= EMPTY_ALERT_STREAK:
+            print(f'ALERT: {streak} 次连续空返回(阈值 {EMPTY_ALERT_STREAK}), exit 1 触发 cron 飞书告警')
+            sys.exit(1)
+        return
+    update_empty_streak(False)  # 有数据即清零连续空返回计数
     df = pd.DataFrame(all_rows)
     if os.path.exists(C_CSV):
         old = pd.read_csv(C_CSV, dtype={'fund_code': str, 'instrument_id': str})

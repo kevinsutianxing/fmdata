@@ -11,12 +11,22 @@ import json
 import urllib.request
 from pathlib import Path
 from datetime import datetime
+import sys
+from fmdata.recipe_fetcher import _get_qg_proxy, _set_requests_proxy
 
 STORE = Path.home() / "fmdata" / "store"
 REG_PATH = Path.home() / "fmdata" / "registry.json"
 FMURL = "http://127.0.0.1:1934"
 SNAP_DIR = STORE / "fundamentals" / "consensus_snapshots"
 SNAP_DIR.mkdir(parents=True, exist_ok=True)
+
+# ── 0. QG 代理池 (CLAUDE.md 铁律: akshare 禁止裸连东财/同花顺) ──
+_qg_proxy_url = _get_qg_proxy()
+if not _qg_proxy_url:
+    print("ERROR: QG proxy pool unavailable; refusing to call akshare without proxy (裸连被禁止)")
+    sys.exit(1)
+_set_requests_proxy(_qg_proxy_url)
+print("Using QG proxy for akshare calls")
 
 # ── 1. analyst_consensus (EM - all stocks batch) ──────────
 print("Fetching analyst_consensus (EM)...")
@@ -60,6 +70,9 @@ if results:
     combined = pd.concat(results, ignore_index=True)
     combined.to_csv(STORE / "fundamentals" / "consensus_detail.csv", index=False)
     print(f"  consensus_detail: {len(results)} stocks, {len(combined)} rows")
+
+# akshare 段结束: 摘掉代理, 后续本地 fmdata(127.0.0.1) 调用不得走代理
+_set_requests_proxy(None)
 
 # ── 3. consensus_proxy (mixed proxy v2) ───────────────────
 print("Building consensus_proxy (mixed v2)...")
