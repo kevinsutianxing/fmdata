@@ -45,6 +45,7 @@ AGENT_SCRIPT_ALLOWLIST = {
     # 半年报追踪 (快报+预告+Q2拆解+同比/环比)
     "fetch_semiannual_tracker": "/home/ubuntu/fmdata/scripts/fetch_semiannual_tracker.py",
     "fetch_fund_nav": "/home/ubuntu/fmdata/store/scripts/fetch_fund_nav.py",
+    "fetch_reit_dev_invest": "/home/ubuntu/fmdata/store/scripts/fetch_reit_dev_invest.py",
     # Alpha Vantage 美股盈利 (2026-11-07, 免费档25次/天全局配额, 3组轮转)
     "fetch_av_earnings": "/home/ubuntu/fmdata/store/scripts/fetch_av_earnings.py",
     # FMP /stable 三件: 财报日历/分析师预估/季度三表 (2026-11-07, 免费档250/天)
@@ -59,6 +60,9 @@ AGENT_SCRIPT_ALLOWLIST = {
     "fetch_index_weight_hs300_zz500": "/home/ubuntu/fmdata/store/scripts/fetch_index_weight_hs300_zz500.py",
     "fetch_adj_factor_csi300": "/home/ubuntu/fmdata/store/scripts/fetch_adj_factor_csi300.py",
     "fetch_report_rc_monthly": "/home/ubuntu/fmdata/store/scripts/fetch_report_rc_monthly.py",
+    # 申万行业 PIT 映射 (tushare index_classify+index_member, monthly): 业绩披露行业归属用
+    # 2026-11-25 补登记——治理 monthly(1~3 日) 唯一刷新路径自 2026-07 起每轮 502，数据停在 07-07
+    "fetch_sw_industry_pts": "/home/ubuntu/fmdata/store/scripts/fetch_sw_industry_pts.py",
     "fetch_daily_window": "/home/ubuntu/fmdata/store/scripts/fetch_daily_window.py",
     "fetch_suspend_d_increment": "/home/ubuntu/fmdata/store/scripts/fetch_suspend_d_increment.py",
     # 分析师一致预期因子表 (本地 analyst_consensus/panel/snapshots + daily-matrix)

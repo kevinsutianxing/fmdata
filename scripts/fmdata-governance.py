@@ -88,6 +88,14 @@ EXTERNALLY_REFRESHED_BY_CRON = {
     # 2026-11-15: gfclaw 数仓由 /data/gfclaw/scripts/daily_sync.sh (cron 23:10) 供给，
     # 治理刷它会触发 26G parquet 全量 sha256 重扫（分钟级浪费），且其锁包装会拒绝并发
     "gfclaw_warehouse",
+    # 2026-11-21: consensus_factors 由周日 02:30 build_consensus_factors.py cron 唯一构建；
+    # 其 source:agent 的 /fetch 走 agent 执行器治理刷不动，自 11-14 起每周到期日假报 failed(502)
+    "consensus_factors",
+    # 2026-11-25: cboe_historical(11-21 新注册) 由 cron 06:09/22:33 CST(周二~六) 唯一写入；
+    # 脚本未登记 recipe_fetcher.AGENT_SCRIPT_ALLOWLIST → 治理 /fetch 秒回 502
+    # ("script not in allowlist")，每轮假报 1 failed。数据由专属 cron 保证新鲜，
+    # Phase 4b 仍按 US_CLOSE_BAND_SOURCES 审计 mtime（不影响断档告警）。
+    "cboe_historical",
 }
 
 
@@ -528,6 +536,99 @@ def archive_stray_data(scan_results, dry_run=False):
 # Phase 3: 刷新已有 Recipe
 # ─────────────────────────────────────────────────────────
 
+ALLOWLIST_SRC = os.path.join(HOME, "fmdata", "fmdata", "recipe_fetcher.py")
+
+
+def _agent_allowlist_paths():
+    """从 recipe_fetcher 源码解析 AGENT_SCRIPT_ALLOWLIST 的脚本绝对路径集合。
+
+    不 import fmdata（会拉起 pandas 等重依赖，治理脚本保持纯 stdlib）。
+    服务进程在启动时加载该 dict；改文件未重启时运行值会滞后（属另一类漂移）。
+    """
+    try:
+        with open(ALLOWLIST_SRC, encoding="utf-8") as f:
+            src = f.read()
+    except OSError:
+        return None
+    block = re.search(r"AGENT_SCRIPT_ALLOWLIST\s*=\s*\{(.*?)\n\}", src, re.S)
+    if not block:
+        return None
+    return set(re.findall(r'"[^"]+"\s*:\s*"([^"]+)"', block.group(1)))
+
+
+def _fmdata_proc_start():
+    """fmdata 服务进程的启动时刻（epoch 秒）；找不到返回 None。
+
+    取 /proc/<pid>/stat 第 22 字段（启动以来的时钟滴答）换算——🔴 /proc/<pid> 目录的
+    mtime 不是启动时刻（5.15 实测会被刷新）。argv 精确匹配，避免 wrapper shell 自匹配。
+    """
+    try:
+        boot = time.clock_gettime(time.CLOCK_BOOTTIME)
+        hz = os.sysconf("SC_CLK_TCK")
+    except (AttributeError, OSError, ValueError):
+        return None
+    starts = []
+    for d in os.listdir("/proc"):
+        if not d.isdigit():
+            continue
+        try:
+            with open(f"/proc/{d}/cmdline", "rb") as f:
+                if b"fmdata.research_server:app" not in f.read().split(b"\0"):
+                    continue
+            with open(f"/proc/{d}/stat") as f:
+                raw = f.read()
+            # comm(字段2) 可含空格/括号 → 从最后一个 ')' 之后重排，字段22 = 偏移 19
+            starts.append(time.time() - boot + int(raw[raw.rindex(")") + 2:].split()[19]) / hz)
+        except (OSError, ValueError, IndexError):
+            continue
+    return min(starts) if starts else None
+
+
+def audit_agent_recipe_registration(recipes=None):
+    """结构性 502 预检：source:agent 的脚本既不在 AGENT_SCRIPT_ALLOWLIST、又未登记
+    EXTERNALLY_REFRESHED_BY_CRON → 治理 POST /fetch 必秒回 502"script not in allowlist"，
+    每轮假报 failed（2026-08-31 回购/研报族、11-21 consensus_factors、11-25 cboe_historical
+    三次复发；服务端真值看 `journalctl --user -u fmdata | grep 'not in allowlist'`）。
+    """
+    allowed = _agent_allowlist_paths()
+    if allowed is None:
+        log("  结构性502预检: 跳过（读不到 AGENT_SCRIPT_ALLOWLIST 源码）", "WARN")
+        return []
+    if recipes is None:
+        recipes = get_fmdata_recipes()
+    if not recipes or "error" in recipes:
+        log("  结构性502预检: 跳过（recipe 列表不可用）", "WARN")
+        return []
+    bad, checked = [], 0
+    for name, info in recipes.items():
+        if info.get("update_freq") not in ("daily", "weekly", "monthly"):
+            continue
+        if info.get("source") != "agent" or name in EXTERNALLY_REFRESHED_BY_CRON:
+            continue
+        try:
+            with open(os.path.join(HOME, "fmdata", "store", "recipes", f"{name}.yaml"),
+                      encoding="utf-8") as f:
+                # 镜像服务端语义（recipe_fetcher._fetch_agent 取 parts[1] 做 abspath 比对）：
+                # python3 后第一个 token 就是脚本路径，写成 `python3 -u x.py` 服务端同样 502
+                m = re.search(r"^\s*command:\s*[\"']?python3\s+([^\"'\s]+)", f.read(), re.M)
+        except OSError:
+            continue
+        checked += 1
+        if m and os.path.abspath(os.path.expanduser(m.group(1))) not in allowed:
+            bad.append(name)
+    for n in bad:
+        log(f"  ⚠ {n}: 脚本不在 AGENT_SCRIPT_ALLOWLIST 且未设专属cron → /fetch 必结构性502", "WARN")
+    try:  # 预检读的是源码；服务进程启动时加载的那份才是运行值 → 防"改了没重启"假绿
+        src_mtime, proc_start = os.path.getmtime(ALLOWLIST_SRC), _fmdata_proc_start()
+        if proc_start and src_mtime > proc_start:
+            log("  ⚠ recipe_fetcher.py 晚于 fmdata 进程启动 → allowlist 改动未加载"
+                "（systemctl --user restart fmdata 后生效）", "WARN")
+    except OSError:
+        pass
+    log(f"  结构性502预检: {'❌ ' + str(len(bad)) + ' 个未登记' if bad else '✅ 已登记齐备'}"
+        f"（{checked} 个 agent recipe 核对）")
+    return bad
+
 def refresh_recipes(force=False):
     """刷新需要更新的 recipe（按 update_freq 分频，避免 weekly/monthly 每夜重复重抓）
 
@@ -544,6 +645,8 @@ def refresh_recipes(force=False):
     if not recipes or "error" in recipes:
         log("无法获取 recipe 列表", "ERROR")
         return
+
+    audit_agent_recipe_registration(recipes)
 
     today = datetime.now().date()
     weekday = today.weekday()   # Mon=0 ... Sat=5, Sun=6
@@ -564,7 +667,9 @@ def refresh_recipes(force=False):
             continue
 
         # 专属 cron 维护的放最前判断（不受分频门影响，避免每周/每月窗口期漏跳再报错）
-        if info.get("source") == "soochow_mcp" or name in EXTERNALLY_REFRESHED_BY_CRON:
+        # 2026-11-21: +htsc_mcp——4 个华泰宏观/情绪/港股 recipe 由周二 08:27 fetch_htsc_mcp.py
+        # cron 唯一写入(append-only 冻结)；source 不在 /fetch 分发表，治理直刷必 502(unknown source)
+        if info.get("source") in ("soochow_mcp", "htsc_mcp") or name in EXTERNALLY_REFRESHED_BY_CRON:
             skipped_external += 1
             continue
 
@@ -822,6 +927,9 @@ def audit_daily_freshness(send_alert=True):
     # (sw_industry_pts=SW半年评审才变更, in_date max 2026-07-03 即最新;
     #  report_rc_monthly=tushare report_rc 滞后>45d 实测, 2026-10 未发布属上游节奏)
     UPSTREAM_PACED_MONTHLY = {"sw_industry_pts", "report_rc_monthly"}
+    # 2026-11-18: v1 退役源(get_factor_value 已下线, CSV 改名 RETIRED-20261117)。recipe 保留
+    # 作文档锚(yaml 描述含 RETIRED 说明), 审计跳过; 活基=sw_raw/chip_monthend_v2 自有刷新链
+    RETIRED_SOURCES = {"sw_factor_value"}
     # 2026-11-16: daily 走交易日感知门槛; weekly/monthly 按 freq 分档固定阈值
     # (weekly 9d 容错=刷新窗 Sat/Sun+一周; monthly 45d=SW 服务端滞后可超 38d)
     FREQ_FLOOR_H = {"daily": None, "weekly": 9 * 24, "monthly": 45 * 24}
@@ -829,7 +937,17 @@ def audit_daily_freshness(send_alert=True):
     # 周二凌晨审计必见"周六早晨写入"→假阳性(2026-11-17 实证 cboe 70h/moomoo 69h,
     # 但周一盘数据物理上要到周二 06:50 才存在)。放宽 36h: 周末假阳清零,
     # 断档检测延迟一天(仍远小于周级护栏, 可接受)。
-    US_CLOSE_BAND_SOURCES = {"cboe_iv_surface", "moomoo_iv_history"}
+    # 2026-11-24 同病补录: cboe_historical(cron 周二~六 06:09/22:33, 周二 03:42 审计
+    # 必见周六 22:33 写盘=53h 假stale) / us_equity_kline_em(周一 EM 无新棒幂等不写盘,
+    # mtime 停在周六, 15:25 cron 自愈)。两源 cron 均自带失败飞书告警。
+    US_CLOSE_BAND_SOURCES = {"cboe_iv_surface", "moomoo_iv_history",
+                             "cboe_historical", "us_equity_kline_em"}
+    # 2026-11-24: htsc 周度三源服务端发布节奏不齐(实证: 11-14 装机物化后
+    # global_macro_factors 到 11-24 仍无新行, fetcher 幂等不写盘 → 221h 假stale;
+    # quadrant/emotion 服务端隔周补行同风险)。刷新 cron(周二 08:27, 在审计后)自带
+    # 失败告警; weekly 门槛 9d→16d 放宽, 只兜"服务端停更>半月"的真断流。
+    WEEKLY_RELAXED_SOURCES = {"htsc_global_macro_factors", "htsc_macro_quadrant",
+                              "htsc_market_emotion"}
 
     # 2026-11-17: /status 的 file 字段是 store 扫描产物, 会被同名陈旧副本遮蔽
     # (实证: daily_basic 被 chip_window_20250701_20260930/ 冻结快照遮蔽报 665h 假stale;
@@ -858,6 +976,9 @@ def audit_daily_freshness(send_alert=True):
         if name in UPSTREAM_PACED_MONTHLY:
             log(f"  ⏭ {name}: 上游节奏型月度源, 跳过 mtime 判定(内容新鲜度由上游决定)")
             continue
+        if name in RETIRED_SOURCES:
+            log(f"  ⏭ {name}: 退役源(sw v1, 2026-11-17), 跳过审计")
+            continue
         rel = _recipe_file(name) or status.get(name, {}).get("file", "")
         if not rel:
             if freq == "daily":
@@ -871,6 +992,8 @@ def audit_daily_freshness(send_alert=True):
         _floor = floor if freq == "daily" else now - FREQ_FLOOR_H[freq] * 3600
         if name in US_CLOSE_BAND_SOURCES:
             _floor -= 36 * 3600
+        if freq == "weekly" and name in WEEKLY_RELAXED_SOURCES:
+            _floor = now - 16 * 24 * 3600
         if os.path.getmtime(path) < _floor:
             stale.append((f"{name}({freq})", (now - os.path.getmtime(path)) / 3600))
 
@@ -1016,6 +1139,7 @@ def main():
     if args.audit_only:
         audit_daily_freshness()
         audit_factor_library()
+        audit_agent_recipe_registration()
         return
 
     # Phase 1: 扫描

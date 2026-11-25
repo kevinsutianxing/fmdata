@@ -11,6 +11,7 @@
    - SW 金工因子：`python3 ~/fmdata/scripts/backfill_sw_factors.py`（幂等，最近 3 个月 force；服务端发布滞后 >38 天属正常勿惊）
    - 海外 FRED 系（vix/sp500/usd_index 等）：`curl -X POST -H "X-API-Key: $(grep FMDATA_ADMIN_KEY ~/fmdata/.env | cut -d= -f2)" http://127.0.0.1:1934/fetch/<名>`；DXY/WTI 出版滞后 3-12 天属 FRED 节奏非故障
    - FMP/AV：免费档配额见下表陷阱区，AV 25 次/天只够逐 symbol
+   - **治理日志固定 `❌ <名>: HTTP Error 502`**（秒回、非超时）：`journalctl --user -u fmdata --since "12 hours ago" | grep '<名>'` 看服务端真因。`script not in allowlist`（source:agent 脚本没进 `fmdata/recipe_fetcher.py::AGENT_SCRIPT_ALLOWLIST`）分两种修，**别修反**：①有专属 cron、数据不靠治理刷新 → 登记治理脚本 `EXTERNALLY_REFRESHED_BY_CRON`，免重启（2026-11-25 cboe_historical）；②治理是唯一刷新路径 → 补 allowlist 一行 + `systemctl --user restart fmdata` 才加载（2026-11-25 sw_industry_pts：monthly 窗口每月 502、数据停在 07-07 无人察，补跑后 5491→5504 行）。只登记跳过而不修刷新 = 永久静默陈旧。治理 Phase 3 开头的「结构性502预检」会点名未登记者与"改了没重启"
 4. **补完验证**：行数对不对、日期接上没、抽查 3 行数值（对照另一源）
 5. **登记**：如果发现新的缺口模式/坑 → 写进本文档对应段落，别只留在聊天里
 
